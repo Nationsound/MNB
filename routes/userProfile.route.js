@@ -9,6 +9,6 @@ router.put('/mnb/api/updateUserProfile/:id', userController.updateSingleUser);
 router.delete('/mnb/api/deleteUserProfile/:id', userController.deleteSingleUser);
 router.delete('/mnb/api/deleteAllUsersProfile', userController.deleteAllUsers);
 router.post('/mnb/api/newUser', userController.newUser);
-router.get('/mnb/api/getUserProfile', verifyToken, userController.getLoggedInUserProfile);
+router.get('/mnb/api/getUserProfile', verifyToken, userController.getLoggedInUserProfile); 
 
 module.exports = router;

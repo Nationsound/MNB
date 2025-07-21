@@ -1,10 +1,8 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const Auth = require('../models/auth.schema');
-// const transporter = require('../config/nodemailerConfig');
 const jwt = require("jsonwebtoken");
 const sendEmail = require('../utils/sendEmail') // Function to send emails
-const nodemailer = require('nodemailer');
 const errorHandler = require('../utils/error');
 
 
@@ -97,42 +95,6 @@ const signIn = async (req, res) => {
 
 
 
-// update user account
-
-// const updateUser = async (req, res) => {
-//   if (req.user.id !== req.params.id) {
-//     return res.status(401).json({ message: 'You can update only your account' });
-//   }
-
-//   try {
-//     if (req.body.password) {
-//       req.body.password = await bcrypt.hash(req.body.password, 12);
-//     }
-
-//     const updatedUser = await Auth.findByIdAndUpdate(
-//       req.params.id,
-//       {
-//         $set: {
-//           username: req.body.username,
-//           email: req.body.email,
-//           ...(req.body.password && { password: req.body.password }),
-//           profilePicture: req.body.profilePicture,
-//         },
-//       },
-//       { new: true }
-//     );
-
-//     if (!updatedUser) {
-//       return res.status(404).json({ message: 'User not found' });
-//     }
-
-//     const { password, ...rest } = updatedUser._doc;
-//     res.status(200).json(rest);
-//   } catch (error) {
-//     res.status(500).json({ message: 'Error updating user', error: error.message });
-//   }
-// };
-
 // Controller to get user profile
 const getUserProfile = async (req, res) => {
   try {
@@ -184,14 +146,6 @@ const updateUser = async (req, res) => {
   }
 };
 
-// sign out function using two approaches
-
-      //  without try and catch
-
-    // const signOut = (req, res)=>{
-    //   res.clearCookie('access_token').status(200).json('sign out successful')
-    // }
-      // with try and catch
 
     const signOut = (req, res, next)=>{
       try{
@@ -215,110 +169,89 @@ const updateUser = async (req, res) => {
 
       }
     }
-    // const requestPasswordReset = async (req, res, next) => {
-    //   const { email } = req.body;
-    
-    //   try {
-    //     if (!email) {
-    //       return next(errorHandler(400, 'Email is required'));
-    //     }
-    
-    //     const user = await Auth.findOne({ email });
-    //     if (!user) {
-    //       return next(errorHandler(404, 'User not found'));
-    //     }
-    
-    //     // Proceed to generate reset token and send email...
-    //     res.status(200).json({ message: 'Reset link sent!' });
-    
-    //   } catch (err) {
-    //     console.error('Reset error:', err);
-    //     return next(errorHandler(500, 'Internal server error'));
-    //   }
-    // };
-    
-    
-
-    
 
 const requestPasswordReset = async (req, res, next) => {
   const { email } = req.body;
 
   try {
-    if (!email) return next(errorHandler(400, 'Email is required'));
+    if (!email) {
+      return next(errorHandler(400, 'Email is required'));
+    }
 
     const user = await Auth.findOne({ email });
-    if (!user) return next(errorHandler(404, 'User not found'));
+    if (!user) {
+      return next(errorHandler(404, 'User not found'));
+    }
 
+    // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
     user.resetPasswordToken = hashedToken;
-    user.resetPasswordExpires = Date.now() + 3600000;
+    user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
+
     await user.save();
 
-    const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
-    const message = `You requested a password reset.\nReset it using the link below:\n${resetUrl}`;
+    // Reset URL (change to your frontend URL in production)
+    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
 
-    await sendEmail(user.email, 'Password Reset Request', message, `
-      <p>You requested a password reset</p>
-      <p><a href="${resetUrl}">Click here to reset your password</a></p>
-    `);
+    const message = `You requested a password reset. Use the link below:\n${resetUrl}`;
+    const html = `
+      <p>You requested a password reset.</p>
+      <p>Click <a href="${resetUrl}">here</a> to reset your password.</p>
+      <p>If you didn't request this, ignore this email.</p>
+    `;
 
+    await sendEmail(user.email, 'Password Reset Request', message, html);
+
+    console.log(`✅ Password reset email sent to ${user.email}`);
     res.status(200).json({ message: 'Reset link sent!' });
   } catch (err) {
-    console.error('Error during password reset:', err);
-    return next(errorHandler(500, 'Email could not be sent'));
+    console.error('❌ Error sending password reset email:', err);
+    next(errorHandler(500, 'Could not send password reset email'));
   }
 };
 
 
-
 const resetPassword = async (req, res, next) => {
+  const { token, newPassword } = req.body;
+
   try {
-      const { token, newPassword } = req.body;
 
-      if (!token || !newPassword) {
-          console.log("Missing token or new password");
-          return next(errorHandler(400, "Token and new password are required"));
-      }
+    if (!token || !newPassword) {
+      console.log('❌ Missing token or newPassword');
+      return next(errorHandler(400, 'Token and new password are required'));
+    }
 
-      console.log("Received token:", token);
+    // Hash token and find user
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    console.log('Computed hashedToken:', hashedToken);
 
-      const resetTokenHash = crypto.createHash('sha256').update(token).digest('hex');
-      
-      console.log("Raw token from request:", token);
-      console.log("Hashed token:", resetTokenHash);
+    const user = await Auth.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
 
-      const user = await Auth.findOne({
-          resetPasswordToken: resetTokenHash,
-          resetPasswordExpires: { $gt: Date.now() }
-      });
+    console.log('User found for password reset:', user);
 
-      console.log("User found for password reset:", user);
+    if (!user) {
+      console.log('❌ No user found or token expired');
+      return next(errorHandler(400, 'Invalid or expired token'));
+    }
 
-      if (!user) {
-          console.log("No user found or token expired");
-          return next(errorHandler(400, "Invalid or expired token"));
-      }
+    // Hash new password and save
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
 
-      // Hash and save the new password
-      const salt = await bcrypt.genSalt(10);
-      console.log("Salt generated for password hashing:", salt);
+    await user.save();
 
-      user.password = await bcrypt.hash(newPassword, salt);
-      user.resetPasswordToken = undefined;
-      user.resetPasswordExpires = undefined;
-
-      await user.save();
-      console.log("Password reset successful");
-
-      res.status(200).json({ message: "Password reset successful" });
-
+    console.log(`✅ Password reset successful for user: ${user.email}`);
+    res.status(200).json({ message: 'Password reset successful' });
   } catch (error) {
-      console.error("Reset password error:", error);
-      console.error("Error stack trace:", error.stack);
-      return next(errorHandler(500, "Server error"));
+    console.error('❌ Reset password error:', error);
+    next(errorHandler(500, 'Server error'));
   }
 };
 

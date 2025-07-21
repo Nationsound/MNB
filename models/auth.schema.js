@@ -41,8 +41,10 @@ const authSchema = new mongoose.Schema({
     },
     isAdmin: {
         type: Boolean,
-        default: false
-    }
+        default: false 
+    },
+    resetPasswordToken: String,
+    resetPasswordExpires: Date
 }, { timestamps: true });  // Fixed 'timestamp' to 'timestamps'
 
 const Auth = mongoose.model('Auth', authSchema);  // Fixed typo here
