@@ -2,17 +2,7 @@ const express = require('express');
 const router = express.Router();
 const postController = require('../controllers/post.controllers.js');
 const { verifyToken } = require('../utils/verifyUser');
-const multer = require('multer');
-
-// Configure multer storage (uploads folder)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => {
-    // store with original name or timestamp + original
-    cb(null, Date.now() + '-' + file.originalname);
-  }
-});
-const upload = multer({ storage });
+const upload = require('../upload.js');
 
 // Create new post
 router.post('/mnb/api/addPost', verifyToken, upload.single('image'), postController.createBlog);

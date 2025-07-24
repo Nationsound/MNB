@@ -10,7 +10,7 @@ const createSong = async (req, res, next) => {
     }
 
     const audioFile = req.files?.audio?.[0];
-    const imageFile = req.files?.image?.[0]; // optional
+    const imageFile = req.files?.coverImage?.[0]; // ✅ must match field name
 
     if (!audioFile) {
       return res.status(400).json({ message: 'Audio file is required' });
@@ -20,8 +20,10 @@ const createSong = async (req, res, next) => {
       title,
       artist,
       description,
-      audioUrl: 'uploads/' + audioFile.filename,
-      coverImage: imageFile ? 'uploads/' + imageFile.filename : null,
+      audioUrl: `https://app.mynationblog.fun/uploads/${audioFile.filename}`, // ✅ full public URL
+      coverImage: imageFile 
+        ? `https://app.mynationblog.fun/uploads/${imageFile.filename}` 
+        : null,
     });
 
     const savedSong = await newSong.save();
@@ -36,13 +38,30 @@ const createSong = async (req, res, next) => {
 
 
 const getAllSongs = async (req, res, next) => {
-    try{
-        const songs = await Song.find().sort({realeaseDate: -1});
-        res.json(songs);
-    } catch(error){
-        next(error)
-    }
+  try {
+    const songs = await Song.find();
+
+    const updatedSongs = songs.map(song => {
+      // convert to plain object
+      const songObj = song.toObject();
+      return {
+        ...songObj,
+        audioUrl: songObj.audioUrl.startsWith('http')
+          ? songObj.audioUrl
+          : `https://app.mynationblog.fun/${songObj.audioUrl}`,
+        coverImage: songObj.coverImage?.startsWith('http')
+          ? songObj.coverImage
+          : songObj.coverImage ? `https://app.mynationblog.fun/${songObj.coverImage}` : null
+      };
+    });
+
+    res.json(updatedSongs);
+  } catch (error) {
+    console.error('Get all songs error:', error);
+    next(error);
+  }
 };
+
 
 const getSingleSong = async (req, res) =>{
     try {

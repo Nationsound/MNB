@@ -5,6 +5,7 @@ const port = 1990;
 require('dotenv').config();
 const cors = require('cors');
 const path = require('path');
+const helmet = require('helmet');
 
 //Import parts
 const connectDB = require('./database.js');
@@ -23,6 +24,21 @@ const styleSpotLightRoutes = require('./routes/styleSpotLightRoutes.js');
 const partnershipRoutes = require('./routes/partnershipRoutes.js');
 const adminRoutes = require('./routes/adminRoutes.js');
 const teamRoutes = require('./routes/teamRoutes.js');
+
+
+// ✅ use helmet with CSP
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      fontSrc: ["'self'", 'https://app.mynationblog.fun'],
+      imgSrc: ["'self'", 'https://app.mynationblog.fun', 'data:'],
+      mediaSrc: ["'self'", 'https://app.mynationblog.fun'],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      connectSrc: ["'self'", 'https://app.mynationblog.fun']
+    }
+  }
+}));
 
 
 
@@ -50,6 +66,9 @@ app.get('/', (req, res) => {
   res.send("Welcome to MNB APIs Backend Application");
 });
 
+
+// Serve static files (uploaded images) from the 'uploads' directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Define comment routes
 app.use('/', commentRoutes); // Routes will be under /api/comments
@@ -80,9 +99,6 @@ app.use('/', adminRoutes);
 //Define Team Routes
 app.use('/', teamRoutes);
 
-
-// Serve static files (uploaded images) from the 'uploads' directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Start server
 app.listen(port, () => {

@@ -32,13 +32,13 @@ const createBlog = async (req, res, next) => {
     author,
     categories: parsedCategories,
     slug,
-    userId: req.user.username, // or req.user.id if you store the user's _id
+    userId: req.user.id, // or req.user.id if you store the user's _id
     image: req.file ? req.file.filename : null
   });
 
   try {
     const savedPost = await newPost.save();
-    res.status(201).json(savedPost);
+    res.status(201).json(savedPost); 
   } catch (error) {
     next(error);
   }
