@@ -42,16 +42,16 @@ const getAllSongs = async (req, res, next) => {
     const songs = await Song.find();
 
     const updatedSongs = songs.map(song => {
-      // convert to plain object
       const songObj = song.toObject();
+
       return {
         ...songObj,
-        audioUrl: songObj.audioUrl.startsWith('http')
+        audioUrl: songObj.audioUrl?.startsWith('http')
           ? songObj.audioUrl
-          : `https://app.mynationblog.fun/${songObj.audioUrl}`,
+          : songObj.audioUrl ? `https://app.mynationblog.fun/uploads/${songObj.audioUrl}` : null,
         coverImage: songObj.coverImage?.startsWith('http')
           ? songObj.coverImage
-          : songObj.coverImage ? `https://app.mynationblog.fun/${songObj.coverImage}` : null
+          : songObj.coverImage ? `https://app.mynationblog.fun/uploads/${songObj.coverImage}` : null
       };
     });
 
@@ -61,6 +61,7 @@ const getAllSongs = async (req, res, next) => {
     next(error);
   }
 };
+
 
 
 const getSingleSong = async (req, res) =>{
