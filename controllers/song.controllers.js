@@ -79,9 +79,10 @@ const getSingleSong = async (req, res) =>{
 };
 
 const updateSong = async (req, res) => {
-    try {
+  try {
     const { title, artist, description } = req.body;
 
+    // Find by ID and update
     const updatedSong = await Song.findByIdAndUpdate(
       req.params.id,
       { title, artist, description },
@@ -89,16 +90,18 @@ const updateSong = async (req, res) => {
     );
 
     if (!updatedSong) {
-      return res.status(404).json({ message: 'Song not found' }); 
+      console.warn(`Song not found: ${req.params.id}`);
+      return res.status(404).json({ message: 'Song not found' });
     }
 
+    console.log(`✅ Song updated: ${updatedSong._id}`);
     res.json(updatedSong);
   } catch (error) {
-    console.error('Error updating song:', error);
+    console.error('Error updating song:', error.message);
     res.status(500).json({ message: 'Server error' });
   }
-
 };
+
 
 const deleteSong = async (req, res) => {
     try {

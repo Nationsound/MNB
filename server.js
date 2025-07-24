@@ -48,7 +48,7 @@ app.use(
   cors({
     origin: ["http://localhost:5173", "https://app.mynationblog.fun", "https://mynationblog.fun"],
     credentials: true,
-    methods: ['GET'], // add others if you need
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], // ✅ allow all REST methods you need
   })
 );
 
@@ -100,6 +100,6 @@ app.use((err, req, res, next) => {
 });
 
 // ✅ 9. Start server
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => { // ✅ bind to 0.0.0.0 for Railway / production
   console.log(`🚀 Server running at: http://localhost:${port}`);
 });
