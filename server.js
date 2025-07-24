@@ -30,12 +30,12 @@ const teamRoutes = require('./routes/teamRoutes.js');
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      fontSrc: ["'self'", 'https://app.mynationblog.fun'],
-      imgSrc: ["'self'", 'https://app.mynationblog.fun', 'data:'],
-      mediaSrc: ["'self'", 'https://app.mynationblog.fun'],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      connectSrc: ["'self'", 'https://app.mynationblog.fun']
+      defaultSrc: ["'self'", "https://app.mynationblog.fun", "https://mynationblog.fun"],
+      imgSrc: ["'self'", "https://app.mynationblog.fun", "https://mynationblog.fun", "data:"],
+      mediaSrc: ["'self'", "https://app.mynationblog.fun", "https://mynationblog.fun"],
+      fontSrc: ["'self'", "https://app.mynationblog.fun", "https://mynationblog.fun"], // adjust if you really need
+      styleSrc: ["'self'", "https://app.mynationblog.fun", "https://mynationblog.fun"],
+      connectSrc: ["'self'", 'https://app.mynationblog.fun', 'http://localhost:5173'],
     }
   }
 }));
@@ -45,9 +45,10 @@ app.use(helmet({
 app.use(express.json());
 
 app.use(cors({
-  origin: "http://localhost:5173", // frontend URL
+  origin: ["http://localhost:5173", "https://app.mynationblog.fun", "https://mynationblog.fun"], // frontend URL
   credentials: true, // Allow credentials (cookies, headers, etc.)
-}));
+  methods: ['GET', 'HEAD'],
+}), express.static(path.join(__dirname, 'uploads')));
 // Handle errors globally
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
