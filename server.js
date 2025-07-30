@@ -32,12 +32,12 @@ app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'", "https://app.mynationblog.fun", "https://mynationblog.fun"],
-        imgSrc: ["'self'", "https://app.mynationblog.fun", "https://mynationblog.fun", "data:", "blob"],
-        mediaSrc: ["'self'", "https://app.mynationblog.fun", "https://mynationblog.fun", "data", "blob"],
-        fontSrc: ["'self'", "https://app.mynationblog.fun", "https://mynationblog.fun"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://app.mynationblog.fun", "https://mynationblog.fun"],
-        connectSrc: ["'self'", "https://app.mynationblog.fun", "https://mynationblog.fun", "http://localhost:5173"]
+        defaultSrc: ["'self'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
+        imgSrc: ["'self'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun", "data:", "blob"],
+        mediaSrc: ["'self'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun", "data", "blob"],
+        fontSrc: ["'self'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
+        connectSrc: ["'self'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun", "http://localhost:5173"]
       }
     }
   })
@@ -46,7 +46,7 @@ app.use(
 // ✅ 2. Global CORS (for API routes)
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://app.mynationblog.fun", "https://mynationblog.fun"],
+    origin: ["http://localhost:5173", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], // ✅ allow all REST methods you need
   })
@@ -57,21 +57,24 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ✅ 4. Serve static uploads with CORS
+const allowedOrigins = ['http://localhost:5173', 'https://mynationblog.fun'];
+
 app.use(
   '/uploads',
-  express.static(path.join(__dirname, 'uploads'), {
-    setHeaders: (res, path) => {
-      const allowedOrigins = [
-        'http://localhost:5173',
-        'https://mynationblog.fun'
-      ];
-
-      // You can dynamically pick allowedOrigins[0] if in dev, etc.
-      res.set('Access-Control-Allow-Origin', 'https://mynationblog.fun');
-      res.set('Access-Control-Allow-Credentials', 'true');
-    }
-  })
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // allow non-browser requests
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  }),
+  express.static(path.join(__dirname, 'uploads'))
 );
+
 
 
 // ✅ 5. View engine (if used anywhere)
