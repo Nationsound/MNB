@@ -17,14 +17,13 @@ const createSong = async (req, res, next) => {
     }
 
     const newSong = new Song({
-      title,
-      artist,
-      description,
-      audioUrl: `https://app.mynationblog.fun/uploads/${audioFile.filename}`, // ✅ full public URL
-      coverImage: imageFile 
-        ? `https://app.mynationblog.fun/uploads/${imageFile.filename}` 
-        : null,
-    });
+  title,
+  artist,
+  description,
+  audioUrl: `uploads/${audioFile.filename}`, // just relative path
+  coverImage: imageFile ? `uploads/${imageFile.filename}` : null,
+});
+
 
     const savedSong = await newSong.save();
     res.status(201).json(savedSong);
@@ -36,31 +35,18 @@ const createSong = async (req, res, next) => {
 };
 
 
-
 const getAllSongs = async (req, res, next) => {
   try {
     const songs = await Song.find();
 
-    const updatedSongs = songs.map(song => {
-      const songObj = song.toObject();
-
-      return {
-        ...songObj,
-        audioUrl: songObj.audioUrl?.startsWith('http')
-          ? songObj.audioUrl
-          : songObj.audioUrl ? `https://app.mynationblog.fun/uploads/${songObj.audioUrl}` : null,
-        coverImage: songObj.coverImage?.startsWith('http')
-          ? songObj.coverImage
-          : songObj.coverImage ? `https://app.mynationblog.fun/uploads/${songObj.coverImage}` : null
-      };
-    });
-
-    res.json(updatedSongs);
+    // No need to prepend any domain: frontend handles that dynamically
+    res.json(songs);
   } catch (error) {
     console.error('Get all songs error:', error);
     next(error);
   }
 };
+
 
 
 

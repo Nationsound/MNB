@@ -56,24 +56,10 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ 4. Serve static uploads with CORS
-const allowedOrigins = ['http://localhost:5173', 'https://mynationblog.fun'];
 
-app.use(
-  '/uploads',
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // allow non-browser requests
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-  }),
-  express.static(path.join(__dirname, 'uploads'))
-);
+// just serve /uploads statically:
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 
 
