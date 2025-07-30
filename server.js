@@ -28,33 +28,30 @@ const teamRoutes = require('./routes/teamRoutes.js');
 const port = process.env.PORT || 1990;
 
 // ✅ 1. Security middleware: Helmet with CSP
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
-        imgSrc: ["'self'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun", "data:", "blob"],
-        mediaSrc: ["'self'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun", "data", "blob"],
-        fontSrc: ["'self'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
-        connectSrc: ["'self'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun", "http://localhost:5173"]
-      }
-    }
-  })
-);
+// app.use(
+//   helmet({
+//     contentSecurityPolicy: {
+//       directives: {
+//         defaultSrc: ["'self'", "http://localhost:1990", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
+//         imgSrc: ["'self'", "data:", "blob:", "http://localhost:1990", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
+//         mediaSrc: ["'self'", "data:", "blob:", "http://localhost:1990", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
+//         fontSrc: ["'self'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
+//         styleSrc: ["'self'", "'unsafe-inline'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
+//         connectSrc: ["'self'", "http://localhost:1990", "http://localhost:5173", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
+//       }
+//     }
+//   })
+// );
+
 
 // ✅ 2. Global CORS (for API routes)
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], // ✅ allow all REST methods you need
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   })
 );
-
-// ✅ 3. Built-in middlewares
-app.use(express.json());
-app.use(cookieParser());
 
 
 const allowedOrigins = [
@@ -74,10 +71,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   }
 }));
 
-
-
-
-
+// ✅ 3. Built-in middlewares
+app.use(express.json());
+app.use(cookieParser());
 
 // ✅ 5. View engine (if used anywhere)
 app.set('view engine', 'ejs');
