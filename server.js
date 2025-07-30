@@ -57,8 +57,24 @@ app.use(express.json());
 app.use(cookieParser());
 
 
-// just serve /uploads statically:
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://mynationblog.fun",
+  "https://mnb-pqef.onrender.com"
+];
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, path) => {
+    // set CORS for each request
+    const origin = res.req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+      res.set('Access-Control-Allow-Origin', origin);
+      res.set('Access-Control-Allow-Credentials', 'true');
+    }
+  }
+}));
+
+
 
 
 
@@ -95,10 +111,6 @@ app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({ error: err.message || 'Something went wrong' });
 });
-
-console.log('✅ process.env.PORT:', process.env.PORT);
-console.log('✅ final port used:', port);
-
 // ✅ 9. Start server
 app.listen(port, '0.0.0.0', () => { // ✅ bind to 0.0.0.0 for Railway / production
   console.log(`🚀 Server running at: http://localhost:${port}`);
