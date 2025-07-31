@@ -17,7 +17,7 @@ const transporter = nodemailer.createTransport({
 const sendEmail = async (to, subject, text, html) => {
   const mailOptions = {
     from: `"My Nation Blog" <${process.env.GMAIL_USER}>`,
-    to,
+    to: Array.isArray(to) ? to.join(',') : to,
     subject,
     text,
     html,

@@ -23,26 +23,11 @@ const styleSpotLightRoutes = require('./routes/styleSpotLightRoutes.js');
 const partnershipRoutes = require('./routes/partnershipRoutes.js');
 const adminRoutes = require('./routes/adminRoutes.js');
 const teamRoutes = require('./routes/teamRoutes.js');
+const contactRoutes = require('./routes/contactRoutes.js');
+const subscriberRoutes = require('./routes/subscriberRoutes.js');
 
 // Server port
 const port = process.env.PORT || 1990;
-
-// ✅ 1. Security middleware: Helmet with CSP
-// app.use(
-//   helmet({
-//     contentSecurityPolicy: {
-//       directives: {
-//         defaultSrc: ["'self'", "http://localhost:1990", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
-//         imgSrc: ["'self'", "data:", "blob:", "http://localhost:1990", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
-//         mediaSrc: ["'self'", "data:", "blob:", "http://localhost:1990", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
-//         fontSrc: ["'self'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
-//         styleSrc: ["'self'", "'unsafe-inline'", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
-//         connectSrc: ["'self'", "http://localhost:1990", "http://localhost:5173", "https://mnb-pqef.onrender.com/", "https://mynationblog.fun"],
-//       }
-//     }
-//   })
-// );
-
 
 // ✅ 2. Global CORS (for API routes)
 app.use(
@@ -100,6 +85,8 @@ app.use('/', styleSpotLightRoutes);
 app.use('/', partnershipRoutes);
 app.use('/', adminRoutes);
 app.use('/', teamRoutes);
+app.use('/', contactRoutes);
+app.use('/mnb/api', subscriberRoutes);
 
 // ✅ 8. Global error handler (last)
 app.use((err, req, res, next) => {
