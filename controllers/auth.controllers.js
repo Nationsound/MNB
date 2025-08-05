@@ -4,6 +4,9 @@ const Auth = require('../models/auth.schema');
 const jwt = require("jsonwebtoken");
 const sendEmail = require('../utils/sendEmail') // Function to send emails
 const errorHandler = require('../utils/error');
+const cloudinary = require("../utils/cloudinary");     // adjust path if different
+const streamifier = require("streamifier");
+
 
 
 
@@ -19,7 +22,7 @@ const signUp = async (req, res) => {
     // Check if the email already exists
     const existingUser = await Auth.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ message: 'Email already exists' });
+      return res.status(409).json({ message: 'Email already exists' }); 
     }
 
     // Hash password and create new user
@@ -111,40 +114,66 @@ const getUserProfile = async (req, res) => {
 
 
 // Update User Profile
-// Controller to update user profile
+// Controller to update user profile (with Cloudinary upload)
 const updateUser = async (req, res) => {
   if (req.user.id !== req.params.id) {
     return res.status(401).json({ message: 'You can update only your account' });
   }
 
   try {
-    if (req.body.password) {
-      req.body.password = await bcrypt.hash(req.body.password, 12); // Hash new password if provided
+    // fetch existing user first (for optional old image cleanup)
+    const existing = await Auth.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: 'User not found' });
+
+    // build update object from body
+    const update = {
+      username: req.body.username ?? existing.username,
+      email: req.body.email ?? existing.email,
+    };
+
+    // password (optional)
+    if (req.body.password && req.body.password.trim() !== "") {
+      update.password = await bcrypt.hash(req.body.password, 12);
     }
 
-    const updatedUser = await Auth.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set: {
-          username: req.body.username,
-          email: req.body.email,
-          ...(req.body.password && { password: req.body.password }),
-          profilePicture: req.body.profilePicture,
-        },
-      },
-      { new: true }
-    );
+    // If a new file is sent, upload to Cloudinary
+    if (req.file) {
+      const folder = process.env.CLOUDINARY_FOLDER || "mnb";
 
-    if (!updatedUser) {
-      return res.status(404).json({ message: 'User not found' });
+      const uploadResult = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder, resource_type: "auto" },
+          (err, out) => (err ? reject(err) : resolve(out))
+        );
+        streamifier.createReadStream(req.file.buffer).pipe(stream);
+      });
+
+      update.profilePicture = uploadResult.secure_url;
+      update.profilePictureId = uploadResult.public_id;
+
+      // OPTIONAL: delete old image if it exists and you store its public_id
+      if (existing.profilePictureId) {
+        try {
+          await cloudinary.uploader.destroy(existing.profilePictureId, { resource_type: "image" });
+        } catch (e) {
+          // not fatal; log and continue
+          console.warn("Could not delete old Cloudinary image:", e.message);
+        }
+      }
+    } else if (typeof req.body.profilePicture === "string") {
+      // if you want to allow direct URL set without uploading a file
+      update.profilePicture = req.body.profilePicture;
     }
 
-    const { password, ...rest } = updatedUser._doc; // Exclude password from the response
-    res.status(200).json(rest);
+    const updatedUser = await Auth.findByIdAndUpdate(req.params.id, { $set: update }, { new: true, select: "-password" });
+
+    return res.status(200).json(updatedUser);
   } catch (error) {
-    res.status(500).json({ message: 'Error updating user', error: error.message });
+    console.error("Error updating user:", error);
+    return res.status(500).json({ message: 'Error updating user', error: error.message });
   }
 };
+
 
 
     const signOut = (req, res, next)=>{

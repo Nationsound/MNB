@@ -1,12 +1,19 @@
 const express = require('express');
-const multer = require('multer');
-const styleSpotLightControllers = require('../controllers/styleSpotLightControllers');
+const upload = require('../multer'); // memoryStorage for Cloudinary
+const styleSpotlightControllers = require('../controllers/styleSpotLightControllers');
+
 const router = express.Router();
-// configure multer to save uploads in /uploads/
-const upload = multer({ dest: 'uploads/' });
 
+// GET all spotlights
+router.get('/mnb/api/getAllSpotlights', styleSpotlightControllers.getAllSpotlights);
 
-router.get('/mnb/api/getAllSpotlights', styleSpotLightControllers.getAllSpotlights);
-router.post('/mnb/api/spotlights', upload.single('image'), styleSpotLightControllers.addSpotlight);
+// POST new spotlight
+router.post('/mnb/api/spotlights', upload.single('image'), styleSpotlightControllers.addSpotlight);
+
+// PUT (update) spotlight by ID
+router.put('/mnb/api/spotlights/:id', upload.single('image'), styleSpotlightControllers.updateSpotlight);
+
+// DELETE spotlight by ID
+router.delete('/mnb/api/spotlights/:id', styleSpotlightControllers.deleteSpotlight);
 
 module.exports = router;

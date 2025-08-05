@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const postController = require('../controllers/post.controllers.js');
 const { verifyToken } = require('../utils/verifyUser');
-const upload = require('../upload.js');
+const upload = require('../multer.js');
 
 // Create new post
 router.post('/mnb/api/addPost', verifyToken, upload.single('image'), postController.createBlog);

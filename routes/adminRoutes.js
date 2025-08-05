@@ -1,7 +1,7 @@
 const express = require('express');
 const adminControllers = require('../controllers/adminControllers');
 const router = express.Router();
-const upload = require('../upload');
+const upload = require('../multer');
 
 // Create admin with image upload
 router.post('/mnb/api/admins', upload.single('image'), adminControllers.createAdmin);

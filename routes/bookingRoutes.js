@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bookingController = require('../controllers/bookingControllers');
-const upload = require('../upload'); // Your Multer config
+const upload = require('../multer'); // Your Multer config
 
 router.post('/mnb/api/bookings', upload.single('file'), bookingController.createBooking);
 router.get('/mnb/api/getAllBookings', bookingController.getAllBookings);

@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
+const upload = require('../multer.js');
 
 const { createSmartLink, getSmartLinkById } = require('../controllers/smartLink.controllers.js');
 

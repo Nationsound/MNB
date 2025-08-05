@@ -1,10 +1,45 @@
 const TeamMember = require('../models/teamSchema');
+const cloudinary = require('../utils/cloudinary');
+const streamifier = require('streamifier');
+
+// Upload helper
+const uploadToCloudinary = (buffer, folder = 'team') => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: 'image'
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
+};
+
 // Create
 const createTeamMember = async (req, res, next) => {
   try {
     const { name, role, quote, linkedin, twitter, instagram } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : null;
-    const member = new TeamMember({ name, role, quote, linkedin, twitter, instagram, image });
+
+    let imageUrl = null;
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer, 'team');
+      imageUrl = result.secure_url;
+    }
+
+    const member = new TeamMember({
+      name,
+      role,
+      quote,
+      linkedin,
+      twitter,
+      instagram,
+      image: imageUrl
+    });
+
     await member.save();
     res.status(201).json(member);
   } catch (err) {
@@ -42,8 +77,14 @@ const getTeamMember = async (req, res, next) => {
 const updateTeamMember = async (req, res, next) => {
   try {
     const { name, role, quote, linkedin, twitter, instagram } = req.body;
+
     const updates = { name, role, quote, linkedin, twitter, instagram };
-    if (req.file) updates.image = `/uploads/${req.file.filename}`;
+
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer, 'team');
+      updates.image = result.secure_url;
+    }
+
     const member = await TeamMember.findByIdAndUpdate(req.params.id, updates, { new: true });
     if (!member) return res.status(404).json({ message: 'Not found' });
     res.json(member);

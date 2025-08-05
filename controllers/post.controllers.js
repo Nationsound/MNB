@@ -1,5 +1,18 @@
 const Post = require('../models/post.schema');
 const errorHandler = require('../utils/error');
+const cloudinary = require('../utils/cloudinary');
+const streamifier = require('streamifier');
+
+// helper: upload buffer to Cloudinary
+function uploadBufferToCloudinary(buffer, folder = process.env.CLOUDINARY_FOLDER || 'mnb') {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: 'image' },
+      (err, result) => (err ? reject(err) : resolve(result))
+    );
+    streamifier.createReadStream(buffer).pipe(stream); 
+  });
+}
 
 // Create a new post
 const createBlog = async (req, res, next) => {
@@ -12,52 +25,72 @@ const createBlog = async (req, res, next) => {
     return next(errorHandler(400, 'Provide all required fields'));
   }
 
-  // Generate slug from title
+  // slug
   const slug = title
     .split(' ')
     .join('-')
     .toLowerCase()
     .replace(/[^a-zA-Z0-9-]/g, '-');
 
-  // Always store categories as array
+  // categories -> array
   const parsedCategories = Array.isArray(categories)
     ? categories
     : typeof categories === 'string'
       ? categories.split(',').map(c => c.trim()).filter(Boolean)
       : [];
 
-  const newPost = new Post({
-    title,
-    content,
-    author,
-    categories: parsedCategories,
-    slug,
-    userId: req.user.id, // or req.user.id if you store the user's _id
-    image: req.file ? req.file.filename : null
-  });
-
   try {
+    let imageUrl, imagePublicId;
+    if (req.file) {
+      const up = await uploadBufferToCloudinary(req.file.buffer);
+      imageUrl = up.secure_url;
+      imagePublicId = up.public_id;
+    }
+
+    const newPost = new Post({
+      title,
+      content,
+      author,
+      categories: parsedCategories,
+      slug,
+      userId: req.user.id,
+      ...(imageUrl ? { imageUrl, imagePublicId } : {})
+    });
+
     const savedPost = await newPost.save();
-    res.status(201).json(savedPost); 
+    res.status(201).json(savedPost);
   } catch (error) {
     next(error);
   }
 };
 
-
-
 // Update a post
 const updateBlog = async (req, res, next) => {
   try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return next(errorHandler(404, 'Post not found'));
+
     const updatedData = { ...req.body };
 
-    // If new image uploaded
-    if (req.file) {
-      updatedData.image = req.file.filename;
+    // categories can be string or array
+    if (updatedData.categories && !Array.isArray(updatedData.categories)) {
+      updatedData.categories = updatedData.categories.split(',').map(c => c.trim()).filter(Boolean);
     }
 
-    if (updatedData.categories) {
-      updatedData.categories = updatedData.categories.split(',').map(c => c.trim());
+    if (req.file) {
+      // upload new image
+      const up = await uploadBufferToCloudinary(req.file.buffer);
+      updatedData.imageUrl = up.secure_url;
+      updatedData.imagePublicId = up.public_id;
+
+      // delete old image if exists
+      if (post.imagePublicId) {
+        try {
+          await cloudinary.uploader.destroy(post.imagePublicId, { resource_type: 'image' });
+        } catch (e) {
+          console.warn('Could not delete old post image:', e.message);
+        }
+      }
     }
 
     const updatedPost = await Post.findByIdAndUpdate(
@@ -66,9 +99,7 @@ const updateBlog = async (req, res, next) => {
       { new: true }
     );
 
-    if (!updatedPost) {
-      return next(errorHandler(404, 'Post not found'));
-    }
+    if (!updatedPost) return next(errorHandler(404, 'Post not found'));
 
     res.status(200).json(updatedPost);
   } catch (error) {
@@ -76,13 +107,21 @@ const updateBlog = async (req, res, next) => {
   }
 };
 
-// Delete a post
+// Delete a post (also delete Cloudinary image if present)
 const deleteBlog = async (req, res, next) => {
   try {
-    const deletedPost = await Post.findByIdAndDelete(req.params.id);
-    if (!deletedPost) {
-      return next(errorHandler(404, 'Post not found'));
+    const post = await Post.findById(req.params.id);
+    if (!post) return next(errorHandler(404, 'Post not found'));
+
+    if (post.imagePublicId) {
+      try {
+        await cloudinary.uploader.destroy(post.imagePublicId, { resource_type: 'image' });
+      } catch (e) {
+        console.warn('Could not delete post image from Cloudinary:', e.message);
+      }
     }
+
+    await Post.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: 'Post deleted successfully' });
   } catch (error) {
     next(error);
@@ -103,9 +142,7 @@ const getAllBlogs = async (req, res, next) => {
 const getBlogById = async (req, res, next) => {
   try {
     const post = await Post.findById(req.params.id);
-    if (!post) {
-      return next(errorHandler(404, 'Post not found'));
-    }
+    if (!post) return next(errorHandler(404, 'Post not found'));
     res.status(200).json(post);
   } catch (error) {
     next(error);

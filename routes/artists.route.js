@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../upload');
+const upload = require('../multer');
 const artistController = require('../controllers/artistControllers');
 
 // Create new artist

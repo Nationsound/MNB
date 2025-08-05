@@ -3,7 +3,6 @@ const app = express();
 const mongoose = require('mongoose');
 require('dotenv').config();
 const cors = require('cors');
-const helmet = require('helmet');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 
@@ -26,6 +25,7 @@ const teamRoutes = require('./routes/teamRoutes.js');
 const contactRoutes = require('./routes/contactRoutes.js');
 const subscriberRoutes = require('./routes/subscriberRoutes.js');
 const adverRoutes = require('./routes/advertRoutes.js');
+const uploadRouter = require('./upload.js')
 
 // Server port
 const port = process.env.PORT || 1990;
@@ -89,6 +89,7 @@ app.use('/', teamRoutes);
 app.use('/', contactRoutes);
 app.use('/mnb/api', subscriberRoutes);
 app.use('/', adverRoutes);
+app.use('/', uploadRouter);
 
 // ✅ 8. Global error handler (last)
 app.use((err, req, res, next) => {

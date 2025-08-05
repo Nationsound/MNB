@@ -1,5 +1,5 @@
 const express = require('express');
-const upload = require('../upload');
+const upload = require('../multer');
 const teamControllers = require('../controllers/teamControllers');
 
 const router = express.Router();

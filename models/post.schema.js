@@ -15,13 +15,10 @@ const postSchema = new mongoose.Schema(
       required: true,
       unique: true
     },
-    image: {
-      type: String,
-      default: "https://your-default-image-url-here.com"
-    },
+    imageUrl: { type: String },
+
     category: {
       type: String,
-      default: "Uncategorize"
     },
     slug: {
       type: String,

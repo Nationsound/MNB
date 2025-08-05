@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const advertController = require('../controllers/advertControllers');
-const upload = require('../upload');
+const upload = require('../multer');
 
 // Create advert
 router.post('/mnb/api/adverts', upload.single('image'), advertController.createAdvert);

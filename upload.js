@@ -1,28 +1,38 @@
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+// upload.js (root)
+const express = require("express");
+const streamifier = require("streamifier");
+const cloudinary = require("./utils/cloudinary"); // make sure this path/file exists
+const upload = require("./multer");               // <-- reuse the shared Multer instance
 
-// Ensure 'uploads' directory exists
-const uploadDir = 'uploads';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
+const router = express.Router();
 
-// Set up multer storage configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => { 
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // e.g., audio-162387123.mp3 or image-162387123.jpg
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    const field = file.fieldname; // will be 'audio' or 'image'
-    cb(null, `${field}-${uniqueSuffix}${ext}`);
-  },
+router.post("/upload", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+    const folder = process.env.CLOUDINARY_FOLDER || "uploads";
+
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder, resource_type: "auto" }, // auto handles image/audio/video/pdf
+        (err, out) => (err ? reject(err) : resolve(out))
+      );
+      streamifier.createReadStream(req.file.buffer).pipe(stream);
+    });
+
+    res.json({
+      url: result.secure_url,
+      public_id: result.public_id,
+      resource_type: result.resource_type,
+      width: result.width,
+      height: result.height,
+      bytes: result.bytes,
+      format: result.format,
+    });
+  } catch (error) {
+    console.error("Upload failed:", error);
+    res.status(500).json({ message: "Upload failed", error: error.message });
+  }
 });
 
-// Initialize multer with the storage configuration
-const upload = multer({ storage });
-
-module.exports = upload; 
+module.exports = router;
