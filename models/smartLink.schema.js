@@ -1,13 +1,25 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify'); // install this via npm
 
-const smartLinkSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  coverImage: { type: String }, // store filename or URL
-  youtube: { type: String },
-  spotify: { type: String },
-  boomplay: { type: String },
-  appleMusic: { type: String },
-  audiomack: { type: String },
-}, { timestamps: true });
+const SmartLinkSchema = new mongoose.Schema({
+  songTitle: { type: String, required: true },
+  artistName: { type: String, required: true },
+  coverImage: { type: String },
+  coverImagePublicId: { type: String },
+  audioFile: { type: String },
+  slug: { type: String, unique: true },
+  createdAt: { type: Date, default: Date.now },
+});
 
-module.exports = mongoose.model('SmartLink', smartLinkSchema);
+// Auto-generate slug before saving
+SmartLinkSchema.pre('save', function (next) {
+  if (!this.slug) {
+    this.slug = slugify(`${this.songTitle}-${this.artistName}`, {
+      lower: true,
+      strict: true,
+    });
+  }
+  next();
+});
+
+module.exports = mongoose.model('SmartLink', SmartLinkSchema);
