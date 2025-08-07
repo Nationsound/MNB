@@ -4,12 +4,21 @@ const slugify = require('slugify'); // install this via npm
 const SmartLinkSchema = new mongoose.Schema({
   songTitle: { type: String, required: true },
   artistName: { type: String, required: true },
-  coverImage: { type: String },
+  coverImageUrl: { type: String },
   coverImagePublicId: { type: String },
   audioFile: { type: String },
+
+  // 🎵 Platform links (add these)
+  youtube: { type: String },
+  spotify: { type: String },
+  appleMusic: { type: String },
+  audiomack: { type: String },
+  boomplay: { type: String },
+
   slug: { type: String, unique: true },
   createdAt: { type: Date, default: Date.now },
 });
+
 
 // Auto-generate slug before saving
 SmartLinkSchema.pre('save', function (next) {

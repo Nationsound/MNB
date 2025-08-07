@@ -30,6 +30,7 @@ const createSmartLink = async (req, res) => {
     let coverImageUrl, coverImagePublicId;
     if (req.file) {
       const up = await uploadBufferToCloudinary(req.file.buffer);
+      console.log("Cloudinary Upload Result:", up);
       coverImageUrl = up.secure_url;
       coverImagePublicId = up.public_id;
     }
