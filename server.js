@@ -26,6 +26,7 @@ const contactRoutes = require('./routes/contactRoutes.js');
 const subscriberRoutes = require('./routes/subscriberRoutes.js');
 const adverRoutes = require('./routes/advertRoutes.js');
 const uploadRouter = require('./upload.js')
+const workerRoutes = require('./routes/workerRoutes.js');
 
 // Server port
 const port = process.env.PORT || 1990;
@@ -90,6 +91,7 @@ app.use('/', contactRoutes);
 app.use('/mnb/api', subscriberRoutes);
 app.use('/', adverRoutes);
 app.use('/', uploadRouter);
+app.use('/', workerRoutes);
 
 // ✅ 8. Global error handler (last)
 app.use((err, req, res, next) => {

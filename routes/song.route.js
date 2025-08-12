@@ -15,7 +15,7 @@ router.post(
   '/mnb/api/createSong',
   upload.fields([
     { name: 'audio', maxCount: 1 },
-    { name: 'coverImage', maxCount: 1 },
+    { name: 'coverImage', maxCount: 1 }, 
   ]),
   songController.createSong
 );
