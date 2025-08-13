@@ -2,6 +2,8 @@ const Song = require('../models/songSchema');
 const cloudinary = require('../utils/cloudinary');
 const streamifier = require('streamifier');
 const NodeID3 = require('node-id3');
+const slugify = require('slugify');
+
 
 // Helper: Upload buffer to Cloudinary
 // Helper: Upload buffer to Cloudinary
