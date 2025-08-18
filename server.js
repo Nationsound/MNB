@@ -27,6 +27,7 @@ const subscriberRoutes = require('./routes/subscriberRoutes.js');
 const adverRoutes = require('./routes/advertRoutes.js');
 const uploadRouter = require('./upload.js')
 const workerRoutes = require('./routes/workerRoutes.js');
+const styleSpotlightCommentRoutes = require('./routes/styleSpotlightCommentRoutes.js');
 
 // Server port
 const port = process.env.PORT || 1990;
@@ -92,6 +93,7 @@ app.use('/mnb/api', subscriberRoutes);
 app.use('/', adverRoutes);
 app.use('/', uploadRouter);
 app.use('/', workerRoutes);
+app.use('/', styleSpotlightCommentRoutes);
 
 // ✅ 8. Global error handler (last)
 app.use((err, req, res, next) => {
