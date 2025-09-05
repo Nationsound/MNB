@@ -139,20 +139,25 @@ const getAllBlogs = async (req, res, next) => {
 };
 
 // Get single post
-const getBlogById = async (req, res, next) => {
+
+const getBlogBySlug = async (req, res, next) => {
   try {
-    const post = await Post.findById(req.params.id);
-    if (!post) return next(errorHandler(404, 'Post not found'));
+    const { slug } = req.params;
+    const post = await Post.findOne({ slug }); // not findById
+    if (!post) {
+      return next(errorHandler(404, "Post not found"));
+    }
     res.status(200).json(post);
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 };
+
 
 module.exports = {
   createBlog,
   updateBlog,
   deleteBlog,
   getAllBlogs,
-  getBlogById,
+  getBlogBySlug,
 };

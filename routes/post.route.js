@@ -16,7 +16,7 @@ router.delete('/mnb/api/deletePost/:id', verifyToken, postController.deleteBlog)
 // Get all posts
 router.get('/mnb/api/getAllPosts', postController.getAllBlogs);
 
-// Get single post by id
-router.get('/mnb/api/getPost/:id', postController.getBlogById);
+// Get single post by slug
+router.get('/mnb/api/getPost/:slug', postController.getBlogBySlug);
 
 module.exports = router;
