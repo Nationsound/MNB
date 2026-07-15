@@ -28,6 +28,7 @@ const adverRoutes = require('./routes/advertRoutes.js');
 const uploadRouter = require('./upload.js')
 const workerRoutes = require('./routes/workerRoutes.js');
 const styleSpotlightCommentRoutes = require('./routes/styleSpotlightCommentRoutes.js');
+const newsRoutes = require('./routes/news.routes.js');
 
 // Server port
 const port = process.env.PORT || 1990;
@@ -94,7 +95,7 @@ app.use('/', adverRoutes);
 app.use('/', uploadRouter);
 app.use('/', workerRoutes);
 app.use('/', styleSpotlightCommentRoutes);
-
+app.use('/', newsRoutes);
 // ✅ 8. Global error handler (last)
 app.use((err, req, res, next) => {
   console.error(err.stack);
