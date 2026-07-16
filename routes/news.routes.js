@@ -43,6 +43,12 @@ router.put(
   newsController.updateNews
 );
 
+// Get news article by ID
+router.get(
+  "/mnb/api/getNewsById/:id",
+  newsController.getNewsById
+);
+
 
 // Delete news article
 router.delete(

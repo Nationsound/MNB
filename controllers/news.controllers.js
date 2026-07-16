@@ -1,8 +1,9 @@
 const News = require("../models/news.schema");
 const errorHandler = require("../utils/error");
-const cloudinary = require("../utils/cloudinary");
-const streamifier = require("streamifier");
-
+const {
+ cloudinary,
+ uploadBufferToCloudinary
+} = require("../utils/cloudinary");
 
 const createSlug = (text) => {
   return text
@@ -12,32 +13,6 @@ const createSlug = (text) => {
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-");
 };
-
-// Upload image buffer to Cloudinary
-function uploadBufferToCloudinary(
-  buffer,
-  folder = process.env.CLOUDINARY_FOLDER || "mnb/news"
-) {
-  return new Promise((resolve, reject) => {
-
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: "image"
-      },
-      (err, result) => {
-        if (err) reject(err);
-        else resolve(result);
-      }
-    );
-
-    streamifier
-      .createReadStream(buffer)
-      .pipe(stream);
-
-  });
-}
-
 
 
 // Create News Article
@@ -338,7 +313,34 @@ next(error);
 
 
 
+const getNewsById = async(req,res,next)=>{
 
+try{
+
+const news = await News.findById(
+  req.params.id
+);
+
+
+if(!news){
+
+return next(
+ errorHandler(404,"News not found")
+);
+
+}
+
+
+res.status(200).json(news);
+
+
+}catch(error){
+
+next(error);
+
+}
+
+};
 
 
 
@@ -829,6 +831,8 @@ module.exports = {
 createNews,
 
 updateNews,
+
+getNewsById,
 
 deleteNews,
 
