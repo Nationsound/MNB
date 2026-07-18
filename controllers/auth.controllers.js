@@ -29,7 +29,7 @@ const signUp = async (req, res) => {
     const hashedPassword = bcrypt.hashSync(password, 10);
     const newUser = new Auth({
       firstName,
-      lastName,
+      lastName, 
       middleName,
       username,
       email,

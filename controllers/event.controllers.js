@@ -1,22 +1,39 @@
 const Event = require("../models/eventSchema");
 const errorHandler = require("../utils/error");
+
 const {
   cloudinary,
   uploadBufferToCloudinary
 } = require("../utils/cloudinary");
 
+const sharp = require("sharp");
 
 
 
-// Create Event
+
+// CREATE EVENT
 
 const addEvent = async(req,res,next)=>{
 
-    if (!req.user || !req.user.isAdmin) {
-  return next(
-    errorHandler(403,"You are not allowed to create events")
-  );
+
+console.log("USER:", req.user);
+console.log("BODY:", req.body);
+console.log("FILES RECEIVED:", req.files);
+
+
+
+if(!req.user || !req.user.isAdmin){
+
+return next(
+errorHandler(
+403,
+"You are not allowed to create events"
+)
+);
+
 }
+
+
 
 try{
 
@@ -36,35 +53,89 @@ ticketTypes
 }=req.body;
 
 
-const slug = title
+
+
+if(
+!title ||
+!description ||
+!date ||
+!time ||
+!venue ||
+!category
+){
+
+return next(
+errorHandler(
+400,
+"Missing required event fields"
+)
+);
+
+}
+
+
+
+
+const slug =
+title
 .toLowerCase()
 .trim()
 .replace(/[^a-zA-Z0-9 ]/g,"")
 .split(" ")
 .join("-");
 
+
+
+
 let imageUrl="";
 let imagePublicId="";
 
 
 
-// Upload cover image
+
+
+// COVER IMAGE
 
 if(req.files?.image){
 
 
+const compressedImage =
+await sharp(
+req.files.image[0].buffer
+)
+.resize({
+
+width:1600,
+
+withoutEnlargement:true
+
+})
+.jpeg({
+
+quality:80
+
+})
+.toBuffer();
+
+
+
+
+
 const uploaded =
 await uploadBufferToCloudinary(
-req.files.image[0].buffer
+compressedImage
 );
+
 
 
 imageUrl =
 uploaded.secure_url;
 
 
+
 imagePublicId =
 uploaded.public_id;
+
 
 
 }
@@ -72,21 +143,48 @@ uploaded.public_id;
 
 
 
-// Upload gallery
+
+
+// GALLERY IMAGES
+
 
 let galleryImages=[];
+
 
 
 if(req.files?.galleryImages){
 
 
-for(const file of req.files.galleryImages){
+
+for(
+const file of req.files.galleryImages
+){
+
+
+const compressedImage =
+await sharp(file.buffer)
+.resize({
+
+width:1200,
+
+withoutEnlargement:true
+
+})
+.jpeg({
+
+quality:75
+
+})
+.toBuffer();
+
+
 
 
 const uploaded =
 await uploadBufferToCloudinary(
-file.buffer
+compressedImage
 );
+
 
 
 galleryImages.push({
@@ -102,6 +200,8 @@ publicId:uploaded.public_id
 
 
 }
+
+
 
 
 
@@ -125,17 +225,28 @@ venue,
 
 category,
 
-
 organizerType,
 
 
+
 organizer:
-JSON.parse(organizer),
+
+organizer
+?
+JSON.parse(organizer)
+:
+{},
+
 
 
 
 ticketTypes:
-JSON.parse(ticketTypes),
+
+ticketTypes
+?
+JSON.parse(ticketTypes)
+:
+[],
 
 
 
@@ -144,8 +255,10 @@ imageUrl,
 imagePublicId,
 
 
-galleryImages
+galleryImages,
 
+
+createdBy:req.user.id
 
 
 });
@@ -158,11 +271,21 @@ res.status(201).json(event);
 
 
 
+
 }catch(error){
+
+
+console.error(
+"CREATE EVENT ERROR:",
+error
+);
+
 
 next(error);
 
+
 }
+
 
 
 };
@@ -175,9 +298,11 @@ next(error);
 
 
 
-// Get All Events
+// GET ALL EVENTS
+
 
 const getAllEvents = async(req,res,next)=>{
+
 
 try{
 
@@ -185,8 +310,11 @@ try{
 const events =
 await Event.find()
 .sort({
+
 createdAt:-1
+
 });
+
 
 
 res.status(200).json(events);
@@ -203,27 +331,46 @@ next(error);
 };
 
 
-// Get Event by Slug
+
+
+
+
+
+
+
+// GET EVENT BY SLUG
+
 
 const getEvent = async(req,res,next)=>{
 
+
 try{
 
-const event = await Event.findOne({
-  slug:req.params.slug
+
+const event =
+await Event.findOne({
+
+slug:req.params.slug
+
 });
 
 
+
 if(!event){
 
 return next(
- errorHandler(404,"Event not found")
+errorHandler(
+404,
+"Event not found"
+)
 );
 
 }
 
 
+
 res.status(200).json(event);
+
 
 
 }catch(error){
@@ -232,15 +379,23 @@ next(error);
 
 }
 
+
 };
 
 
 
 
-// Get Single Event
+
+
+
+
+
+// GET EVENT BY ID
+
 
 const getEventById = async(req,res,next)=>{
 
+
 try{
 
 
@@ -281,206 +436,17 @@ next(error);
 
 
 
-// Update Event
+
+
+
+
+
+
+// UPDATE EVENT
+
 
 const updateEvent = async(req,res,next)=>{
 
-  console.log("EVENT UPDATE USER:", req.user);
-
-
-  try{
-
-
-    const event =
-    await Event.findById(req.params.id);
-
-
-
-    if(!event){
-
-      return next(
-        errorHandler(
-          404,
-          "Event not found"
-        )
-      );
-
-    }
-
-
-
-    const updatedData = {
-      ...req.body
-    };
-
-
-
-
-
-    // Convert organizer string to object
-
-    if(req.body.organizer){
-
-      updatedData.organizer =
-      JSON.parse(req.body.organizer);
-
-    }
-
-
-
-
-    // Convert ticketTypes string to array
-
-    if(req.body.ticketTypes){
-
-      updatedData.ticketTypes =
-      JSON.parse(req.body.ticketTypes);
-
-    }
-
-
-
-
-    // Replace cover image
-
-    if(req.files?.image){
-
-
-      const uploaded =
-      await uploadBufferToCloudinary(
-        req.files.image[0].buffer
-      );
-
-
-
-      updatedData.imageUrl =
-      uploaded.secure_url;
-
-
-      updatedData.imagePublicId =
-      uploaded.public_id;
-
-
-
-
-      // Delete old image
-
-      if(event.imagePublicId){
-
-
-        await cloudinary.uploader.destroy(
-          event.imagePublicId
-        );
-
-
-      }
-
-
-    }
-
-
-
-
-
-
-
-    // Add gallery images
-
-    if(req.files?.galleryImages){
-
-
-      let gallery =
-      [
-        ...(event.galleryImages || [])
-      ];
-
-
-
-
-      for(const file of req.files.galleryImages){
-
-
-        const uploaded =
-        await uploadBufferToCloudinary(
-          file.buffer
-        );
-
-
-
-        gallery.push({
-
-          url: uploaded.secure_url,
-
-          publicId: uploaded.public_id
-
-        });
-
-
-      }
-
-
-
-
-      updatedData.galleryImages =
-      gallery;
-
-
-    }
-
-
-
-
-
-    const updatedEvent =
-    await Event.findByIdAndUpdate(
-
-      req.params.id,
-
-      {
-        $set:updatedData
-      },
-
-      {
-        new:true,
-        runValidators:true
-      }
-
-    );
-
-
-
-
-
-    res.status(200).json(updatedEvent);
-
-
-
-  }catch(error){
-
-    next(error);
-
-  }
-
-
-};
-
-
-
-
-
-
-
-
-
-// Delete Event
-
-const deleteEvent = async(req,res,next)=>{
-
-    if (!req.user || !req.user.isAdmin) {
-  return next(
-    errorHandler(403,"You are not allowed to delete events") 
-  );
-}
 
 try{
 
@@ -506,15 +472,281 @@ errorHandler(
 
 
 
-// Delete cover image
+const updatedData={
+...req.body
+};
+
+
+
+
+
+if(req.body.organizer){
+
+
+updatedData.organizer =
+JSON.parse(
+req.body.organizer
+);
+
+
+}
+
+
+
+if(req.body.ticketTypes){
+
+
+updatedData.ticketTypes =
+JSON.parse(
+req.body.ticketTypes
+);
+
+
+}
+
+
+
+
+
+
+
+
+// UPDATE COVER IMAGE
+
+
+if(req.files?.image){
+
+
+
+const compressedImage =
+await sharp(
+req.files.image[0].buffer
+)
+.resize({
+
+width:1600,
+
+withoutEnlargement:true
+
+})
+.jpeg({
+
+quality:80
+
+})
+.toBuffer();
+
+
+
+
+
+const uploaded =
+await uploadBufferToCloudinary(
+compressedImage
+);
+
+
+
+updatedData.imageUrl =
+uploaded.secure_url;
+
+
+updatedData.imagePublicId =
+uploaded.public_id;
+
+
+
 
 if(event.imagePublicId){
 
 
 await cloudinary.uploader.destroy(
-
 event.imagePublicId
+);
 
+
+}
+
+
+}
+
+
+
+
+
+
+
+
+// UPDATE GALLERY
+
+
+if(req.files?.galleryImages){
+
+
+let gallery =
+[
+...(event.galleryImages || [])
+];
+
+
+
+for(
+const file of req.files.galleryImages
+){
+
+
+const compressedImage =
+await sharp(file.buffer)
+.resize({
+
+width:1200,
+
+withoutEnlargement:true
+
+})
+.jpeg({
+
+quality:75
+
+})
+.toBuffer();
+
+
+
+
+const uploaded =
+await uploadBufferToCloudinary(
+compressedImage
+);
+
+
+
+
+gallery.push({
+
+url:uploaded.secure_url,
+
+publicId:uploaded.public_id
+
+});
+
+
+}
+
+
+
+updatedData.galleryImages =
+gallery;
+
+
+}
+
+
+
+
+
+
+
+
+const updatedEvent =
+await Event.findByIdAndUpdate(
+
+req.params.id,
+
+{
+
+$set:updatedData
+
+},
+
+{
+
+new:true,
+
+runValidators:true
+
+}
+
+);
+
+
+
+
+res.status(200).json(updatedEvent);
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+// DELETE EVENT
+
+
+const deleteEvent = async(req,res,next)=>{
+
+
+if(!req.user || !req.user.isAdmin){
+
+return next(
+errorHandler(
+403,
+"You are not allowed to delete events"
+)
+);
+
+}
+
+
+
+try{
+
+
+const event =
+await Event.findById(
+req.params.id
+);
+
+
+
+if(!event){
+
+return next(
+errorHandler(
+404,
+"Event not found"
+)
+);
+
+}
+
+
+
+
+
+
+
+if(event.imagePublicId){
+
+
+await cloudinary.uploader.destroy(
+event.imagePublicId
 );
 
 
@@ -524,18 +756,18 @@ event.imagePublicId
 
 
 
-// Delete gallery images
 
-for(const image of event.galleryImages){
+
+for(
+const image of event.galleryImages
+){
 
 
 if(image.publicId){
 
 
 await cloudinary.uploader.destroy(
-
 image.publicId
-
 );
 
 
@@ -578,9 +810,21 @@ next(error);
 };
 
 
-// Update Event Approval Status
+
+
+
+
+
+
+
+
+
+
+// APPROVAL STATUS
+
 
 const updateEventApproval = async(req,res,next)=>{
+
 
 try{
 
@@ -588,10 +832,17 @@ try{
 const {status}=req.body;
 
 
+
+
 if(
-!["pending","approved","rejected"]
+![
+"pending",
+"approved",
+"rejected"
+]
 .includes(status)
 ){
+
 
 return next(
 errorHandler(
@@ -600,7 +851,10 @@ errorHandler(
 )
 );
 
+
 }
+
+
 
 
 
@@ -610,14 +864,20 @@ await Event.findByIdAndUpdate(
 req.params.id,
 
 {
+
 approvalStatus:status
+
 },
 
 {
+
 new:true
+
 }
 
 );
+
+
 
 
 
@@ -634,13 +894,19 @@ errorHandler(
 
 
 
+
+
 res.status(200).json({
 
-message:"Event approval updated",
+message:
+"Event approval updated",
 
 event
 
 });
+
+
+
 
 
 }catch(error){
@@ -651,6 +917,11 @@ next(error);
 
 
 };
+
+
+
+
+
 
 
 
@@ -669,6 +940,6 @@ updateEvent,
 
 deleteEvent,
 
-updateEventApproval,
+updateEventApproval
 
 };

@@ -13,7 +13,8 @@ const authSchema = new mongoose.Schema({
     },
     middleName: {
         type: String,
-        trim: true
+        trim: true,
+        default: ""
     },
     username: {
         type: String,

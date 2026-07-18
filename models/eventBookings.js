@@ -1,13 +1,12 @@
 const mongoose = require("mongoose");
 
-
 const eventBookingSchema = new mongoose.Schema(
 
 {
 
 user:{
 type:mongoose.Schema.Types.ObjectId,
-ref:"User",
+ref:"Auth",
 required:true
 },
 
@@ -17,7 +16,6 @@ type:mongoose.Schema.Types.ObjectId,
 ref:"Event",
 required:true
 },
-
 
 
 tickets:[
@@ -100,20 +98,50 @@ default:"pending"
 
 
 
-paymentProof:{
-
+paymentReference:{
 type:String,
 default:""
-
 },
 
 
 
-paymentReference:{
-
+paymentProof:{
 type:String,
 default:""
+},
 
+
+
+paymentProofPublicId:{
+type:String,
+default:""
+},
+
+
+
+ticketNumber:{
+type:String,
+default:""
+},
+
+
+
+qrCode:{
+type:String,
+default:""
+},
+
+
+
+checkedIn:{
+type:Boolean,
+default:false
+},
+
+
+
+checkedInAt:{
+type:Date
 },
 
 
@@ -121,18 +149,19 @@ default:""
 verifiedBy:{
 
 type:mongoose.Schema.Types.ObjectId,
-ref:"User"
+
+ref:"Auth"
 
 },
 
-
+checkedInBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref:"Auth"
+},
 
 verifiedAt:{
-
 type:Date
-
 }
-
 
 
 },
@@ -145,11 +174,7 @@ timestamps:true
 );
 
 
-
 module.exports = mongoose.model(
-
 "EventBooking",
-
 eventBookingSchema
-
 );

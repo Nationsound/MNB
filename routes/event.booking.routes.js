@@ -74,7 +74,24 @@ eventBookingControllers.rejectEventPayment
 );
 
 
+// CHECK IN TICKET
 
+router.put(
+
+"/mnb/api/eventbooking/checkin",
+
+verifyToken,
+
+eventBookingControllers.checkInEventTicket
+
+);
+
+
+router.get(
+"/mnb/api/eventbooking/checked-in",
+verifyToken,
+eventBookingControllers.getCheckedInGuests
+);
 
 
 module.exports = router;
