@@ -14,7 +14,7 @@ const commentRoutes = require('./routes/comment.route.js');
 const postRoutes = require('./routes/post.route.js');
 const songRoutes = require('./routes/song.route.js');
 const smartLinkRoutes = require('./routes/smartLink.route.js');
-const userProfileRoutes = require('./routes/userProfile.route.js');
+// const userProfileRoutes = require('./routes/userProfile.route.js');
 const artistRoutes = require('./routes/artists.route.js');
 const bookingRoutes = require('./routes/bookingRoutes.js');
 const paymentRoutes = require('./routes/paymentRoutes.js');
@@ -32,6 +32,7 @@ const newsRoutes = require('./routes/news.routes.js');
 const eventRoutes = require('./routes/event.routes.js');
 const eventBookingRoutes = require('./routes/event.booking.routes.js');
 const organizerRoutes = require('./routes/organizer.routes.js');
+const mnbUserRoutes = require('./routes/mnbUser.routes.js');
 
 // Server port
 const port = process.env.PORT || 1990;
@@ -84,7 +85,7 @@ app.use('/', commentRoutes);
 app.use('/', postRoutes);
 app.use('/', songRoutes);
 app.use('/', smartLinkRoutes);
-app.use('/', userProfileRoutes);
+// app.use('/', userProfileRoutes);
 app.use('/', artistRoutes);
 app.use('/', bookingRoutes);
 app.use('/', paymentRoutes);
@@ -102,6 +103,7 @@ app.use('/', newsRoutes);
 app.use('/', eventRoutes);
 app.use('/', eventBookingRoutes);
 app.use('/', organizerRoutes);
+app.use('/', mnbUserRoutes);
 
 // ✅ 8. Global error handler (last)
 app.use((err, req, res, next) => {

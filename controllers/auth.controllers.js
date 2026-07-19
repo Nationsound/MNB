@@ -11,43 +11,174 @@ const streamifier = require("streamifier");
 
 
 const signUp = async (req, res) => {
-  const { firstName, lastName, middleName, username, email, password, age } = req.body;
 
-  // Check for required fields
-  if (!firstName || !lastName || !username || !email || !password || username === '' || email === '' || password === '') {
-    return res.status(400).json({ message: 'All fields are required' });
-  }
 
-  try {
-    // Check if the email already exists
-    const existingUser = await Auth.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({ message: 'Email already exists' }); 
-    }
+  const {
+    username,
+    email,
+    password
+  } = req.body;
 
-    // Hash password and create new user
-    const hashedPassword = bcrypt.hashSync(password, 10);
-    const newUser = new Auth({
-      firstName,
-      lastName, 
-      middleName,
-      username,
-      email,
-      password: hashedPassword,
-      age,
+
+
+  if(
+    !username ||
+    !email ||
+    !password
+  ){
+
+    return res.status(400).json({
+
+      message:"All fields are required"
+
     });
 
-    await newUser.save();
-
-    // Optionally: send confirmation email here
-    res.status(201).json({ message: 'User signup successful' });
-  } catch (error) {
-    console.error('Signup Error:', error);
-    res.status(500).json({ message: 'Sign up error' });
   }
+
+
+
+  try{
+
+
+    const cleanUsername =
+    username
+    .trim()
+    .toLowerCase();
+
+
+
+    const cleanEmail =
+    email
+    .trim()
+    .toLowerCase();
+
+
+
+
+
+    // Check email already exists
+
+    const existingUser =
+    await Auth.findOne({
+
+      email:cleanEmail
+
+    });
+
+
+
+    if(existingUser){
+
+      return res.status(409).json({
+
+        message:"Email already exists"
+
+      });
+
+    }
+
+
+
+
+
+    // Check username already exists
+
+    const MNBUser =
+    require("../models/mnbUserSchema");
+
+
+
+    const existingUsername =
+    await MNBUser.findOne({
+
+      username:cleanUsername
+
+    });
+
+
+
+    if(existingUsername){
+
+      return res.status(409).json({
+
+        message:"Username already taken"
+
+      });
+
+    }
+
+
+
+
+
+    const hashedPassword =
+    await bcrypt.hash(
+
+      password,
+
+      10
+
+    );
+
+
+
+
+
+
+
+    const newUser =
+    await Auth.create({
+
+      email:cleanEmail,
+
+      password:hashedPassword,
+
+      accountType:"user"
+
+    });
+
+
+
+
+
+
+
+    return res.status(201).json({
+
+      message:
+      "Signup successful",
+
+      userId:newUser._id
+
+    });
+
+
+
+
+  }catch(error){
+
+
+    console.log(
+
+      "SIGNUP ERROR:",
+
+      error.message
+
+    );
+
+
+
+    return res.status(500).json({
+
+      message:error.message
+
+    });
+
+
+  }
+
+
 };
-
-
 
 
 const signIn = async (req, res) => {
@@ -223,7 +354,9 @@ email:validUser.email,
 
 accountType:validUser.accountType,
 
-organizerId
+organizerId,
+
+isAdmin:validUser.isAdmin
 
 });
 
@@ -243,16 +376,68 @@ message:error.message
 
 // Controller to get user profile
 const getUserProfile = async (req, res) => {
+
+  console.log("================ PROFILE CHECK ================");
+
+  console.log(
+    "REQ.USER:",
+    req.user
+  );
+
+
   try {
-    const user = await Auth.findById(req.user.id).select("-password");
+
+    const user =
+      await Auth.findById(req.user.id);
+
+
+    console.log(
+      "AUTH USER FOUND:",
+      user
+    );
+
+
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+
+      return res.status(404).json({
+
+        message:"User not found in Auth collection"
+
+      });
+
     }
 
-    res.status(200).json(user);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+
+    const safeUser = {
+      _id:user._id,
+      firstName:user.firstName,
+      middleName:user.middleName,
+      lastName:user.lastName,
+      email:user.email,
+      age:user.age,
+      accountType:user.accountType
+    };
+
+
+    res.status(200).json(safeUser);
+
+
+  } catch(err) {
+
+    console.log(
+      "PROFILE ERROR:",
+      err.message
+    );
+
+
+    res.status(500).json({
+
+      message:err.message
+
+    });
+
   }
+
 };
 
 
