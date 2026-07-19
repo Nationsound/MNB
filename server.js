@@ -31,6 +31,7 @@ const styleSpotlightCommentRoutes = require('./routes/styleSpotlightCommentRoute
 const newsRoutes = require('./routes/news.routes.js');
 const eventRoutes = require('./routes/event.routes.js');
 const eventBookingRoutes = require('./routes/event.booking.routes.js');
+const organizerRoutes = require('./routes/organizer.routes.js');
 
 // Server port
 const port = process.env.PORT || 1990;
@@ -100,6 +101,7 @@ app.use('/', styleSpotlightCommentRoutes);
 app.use('/', newsRoutes);
 app.use('/', eventRoutes);
 app.use('/', eventBookingRoutes);
+app.use('/', organizerRoutes);
 
 // ✅ 8. Global error handler (last)
 app.use((err, req, res, next) => {

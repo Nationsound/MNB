@@ -236,6 +236,16 @@ ticketSchema
 
 
 
+organizerProfile:{
+
+type:mongoose.Schema.Types.ObjectId,
+
+ref:"Organizer",
+
+required:false
+
+},
+
 
 
 
@@ -244,11 +254,11 @@ createdBy:{
 
 type:mongoose.Schema.Types.ObjectId,
 
-ref:"Auth"
+ref:"Auth",
+
+required:false
 
 }
-
-
 
 
 

@@ -51,51 +51,194 @@ const signUp = async (req, res) => {
 
 
 const signIn = async (req, res) => {
-  const { email, password } = req.body;
 
-  if (!email || !password || email.trim() === "" || password.trim() === "") {
-    return res.status(400).json({ message: "All fields are required" });
-  }
+const {
+email,
+password
+}=req.body;
 
-  try {
-    const validUser = await Auth.findOne({ email });
-    if (!validUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
 
-    const validPassword = await bcrypt.compare(password, validUser.password);
-    if (!validPassword) {
-      return res.status(401).json({ message: "Invalid Password" });
-    }
+if (
+!email ||
+!password ||
+email.trim()==="" ||
+password.trim()===""
+){
 
-    const token = jwt.sign(
-      { id: validUser._id, isAdmin: validUser.isAdmin || false },
-      process.env.JWT_SECRET
-    );
+return res.status(400).json({
+message:"All fields are required"
+});
 
-    const expiryDate = new Date(Date.now() + 3600000); // 1 hour
+}
 
-    
-     res.cookie("access_token", token, {
-        httpOnly: true,
-        secure:  process.env.NODE_ENV === 'production',
-        expires: expiryDate,
-        sameSite: "none",
-        maxAge: 24 * 60 * 60 * 1000,
-      })
-      .status(200)
-      .json({ message: "Login successful",
-        token,
-        _id: validUser._id, 
-        role: validUser.role,
-        email: validUser.email
-      });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+
+try{
+
+
+const validUser = await Auth.findOne({
+email
+});
+
+
+
+if(!validUser){
+
+return res.status(404).json({
+message:"User not found"
+});
+
+}
+
+
+
+
+const validPassword =
+await bcrypt.compare(
+password,
+validUser.password
+);
+
+
+
+if(!validPassword){
+
+return res.status(401).json({
+message:"Invalid Password"
+});
+
+}
+
+
+
+
+let organizerId = null;
+
+
+
+
+// Check organizer profile
+
+if(validUser.accountType === "organizer"){
+
+
+const Organizer =
+require("../models/organizerSchema");
+
+
+const organizer =
+await Organizer.findOne({
+
+user:validUser._id
+
+});
+
+
+
+if(organizer){
+
+organizerId =
+organizer._id;
+
+}
+
+
+}
+
+
+
+
+
+
+
+const token = jwt.sign(
+
+{
+
+id:validUser._id,
+
+isAdmin:
+validUser.isAdmin || false,
+
+
+accountType:
+validUser.accountType || "user",
+
+
+organizerId
+
+},
+
+process.env.JWT_SECRET
+
+);
+
+
+
+
+
+
+
+const expiryDate =
+new Date(
+Date.now()+3600000
+);
+
+
+
+
+
+
+const isProduction =
+process.env.NODE_ENV === "production";
+
+
+res.cookie(
+"access_token",
+token,
+{
+
+httpOnly:true,
+
+secure:isProduction,
+
+sameSite:isProduction
+? "none"
+: "lax",
+
+maxAge:
+24 * 60 * 60 * 1000
+
+}
+)
+.status(200)
+.json({
+
+message:"Login successful",
+
+token,
+
+_id:validUser._id,
+
+email:validUser.email,
+
+accountType:validUser.accountType,
+
+organizerId
+
+});
+
+}catch(error){
+
+res.status(500).json({
+
+message:error.message
+
+});
+
+}
+
+
 };
-
-
 
 
 // Controller to get user profile

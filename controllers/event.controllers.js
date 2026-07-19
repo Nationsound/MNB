@@ -1,4 +1,5 @@
 const Event = require("../models/eventSchema");
+const Organizer = require("../models/organizerSchema");
 const errorHandler = require("../utils/error");
 
 const {
@@ -16,13 +17,19 @@ const sharp = require("sharp");
 const addEvent = async(req,res,next)=>{
 
 
-console.log("USER:", req.user);
-console.log("BODY:", req.body);
-console.log("FILES RECEIVED:", req.files);
+// console.log("USER:", req.user);
+// console.log("BODY:", req.body);
+// console.log("FILES RECEIVED:", req.files);
 
 
 
-if(!req.user || !req.user.isAdmin){
+if(
+!req.user ||
+(
+!req.user.isAdmin &&
+req.user.accountType !== "organizer"
+)
+){
 
 return next(
 errorHandler(
@@ -203,13 +210,74 @@ publicId:uploaded.public_id
 
 
 
+let organizerProfile = null;
+
+
+if(req.user.accountType === "organizer"){
+
+
+organizerProfile =
+await Organizer.findOne({
+
+user:req.user.id
+
+});
+
+
+if(!organizerProfile){
+
+return next(
+errorHandler(
+404,
+"Organizer profile not found"
+)
+);
+
+}
+
+}
 
 
 
 
-const event =
-await Event.create({
+const organizerData =
 
+req.user.accountType === "organizer"
+
+?
+
+{
+
+name:organizerProfile.contactName,
+
+email:organizerProfile.email,
+
+phone:organizerProfile.phone,
+
+company:organizerProfile.businessName
+
+}
+
+:
+
+(
+
+organizer
+
+?
+
+JSON.parse(organizer)
+
+:
+
+{}
+
+);
+
+
+
+
+const event = await Event.create({
 
 title,
 
@@ -227,18 +295,14 @@ category,
 
 organizerType,
 
+organizer:organizerData,
 
-
-organizer:
-
-organizer
+approvalStatus:
+req.user.accountType === "organizer"
 ?
-JSON.parse(organizer)
+"pending"
 :
-{},
-
-
-
+req.body.approvalStatus || "pending",
 
 ticketTypes:
 
@@ -249,20 +313,26 @@ JSON.parse(ticketTypes)
 [],
 
 
-
 imageUrl,
 
 imagePublicId,
 
-
 galleryImages,
 
 
-createdBy:req.user.id
+createdBy:req.user.id,
+
+
+organizerProfile:
+
+organizerProfile
+?
+organizerProfile._id
+:
+null
 
 
 });
-
 
 
 
