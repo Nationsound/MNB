@@ -75,11 +75,19 @@ router.delete(
 router.get(
   "/mnb/api/getUserDashboard",
   verifyToken,
-  mnbUserControllers.getUserDashboard
+  mnbUserControllers.getUserDashboard 
 );
 
 
+// =======================================
+// CHANGE USER PASSWORD
+// =======================================
 
+router.put(
+  "/mnb/api/changePassword",
+  verifyToken,
+  mnbUserControllers.changePassword
+);
 
 
 module.exports = router;

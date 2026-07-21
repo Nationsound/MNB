@@ -3,6 +3,14 @@ const Organizer = require("../models/organizerSchema");
 const errorHandler = require("../utils/error");
 
 const {
+
+sendEventApprovedNotification,
+
+sendEventRejectedNotification
+
+}=require("../utils/organizerNotifications");
+
+const {
   cloudinary,
   uploadBufferToCloudinary
 } = require("../utils/cloudinary");
@@ -895,13 +903,10 @@ next(error);
 
 const updateEventApproval = async(req,res,next)=>{
 
-
 try{
 
 
 const {status}=req.body;
-
-
 
 
 if(
@@ -909,10 +914,8 @@ if(
 "pending",
 "approved",
 "rejected"
-]
-.includes(status)
+].includes(status)
 ){
-
 
 return next(
 errorHandler(
@@ -921,33 +924,17 @@ errorHandler(
 )
 );
 
-
 }
-
-
 
 
 
 const event =
-await Event.findByIdAndUpdate(
-
-req.params.id,
-
-{
-
-approvalStatus:status
-
-},
-
-{
-
-new:true
-
-}
-
+await Event.findById(
+req.params.id
+)
+.populate(
+"organizerProfile"
 );
-
-
 
 
 
@@ -965,6 +952,53 @@ errorHandler(
 
 
 
+event.approvalStatus = status;
+
+
+await event.save();
+
+
+
+
+
+// SEND ORGANIZER NOTIFICATION
+
+if(event.organizerProfile){
+
+
+if(status === "approved"){
+
+await sendEventApprovedNotification(
+
+event.organizerProfile.email,
+
+event.title
+
+);
+
+}
+
+
+
+if(status === "rejected"){
+
+
+await sendEventRejectedNotification(
+
+event.organizerProfile.email,
+
+event.title
+
+);
+
+
+}
+
+
+}
+
+
+
 
 res.status(200).json({
 
@@ -977,20 +1011,13 @@ event
 
 
 
-
-
 }catch(error){
 
 next(error);
 
 }
 
-
 };
-
-
-
-
 
 
 

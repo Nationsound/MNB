@@ -37,7 +37,7 @@ router.get(
 "/mnb/api/organizer/profile",
 
 verifyToken,
-
+ 
 organizerController.getOrganizerProfile
 
 );
@@ -59,8 +59,55 @@ organizerController.getOrganizerDashboard
 
 );
 
+// Get Organizer Bookings
+
+router.get(
+
+"/mnb/api/organizer/bookings",
+
+verifyToken,
+
+organizerController.getOrganizerBookings
+
+);
+
+// UPDATE ORGANIZER PROFILE
+
+router.put(
+
+"/mnb/api/organizer/update-profile",
+
+verifyToken,
+
+organizerController.updateOrganizerProfile
+
+);
 
 
+// CHANGE PASSWORD
+
+router.put(
+
+"/mnb/api/organizer/change-password",
+
+verifyToken,
+
+organizerController.changeOrganizerPassword
+
+);
+
+
+// DELETE ORGANIZER PROFILE
+
+router.delete(
+
+"/mnb/api/organizer/delete-profile",
+
+verifyToken,
+
+organizerController.deleteOrganizerProfile
+
+);
 
 
 

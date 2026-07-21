@@ -2,6 +2,13 @@ const EventBooking = require("../models/eventBookings");
 const Event = require("../models/eventSchema");
 const QRCode = require("qrcode");
 const errorHandler = require("../utils/error");
+const {
+sendTicketReadyNotification
+}=require("../utils/notifications");
+
+const {
+  sendNewBookingNotification
+}=require("../utils/organizerNotifications");
 
 const {
 cloudinary,
@@ -128,7 +135,11 @@ bookingStatus:"pending"
 
 });
 
-
+await sendNewBookingNotification(
+event.organizer.email,
+event.title,
+totalAmount
+);
 
 res.status(201).json({
 
@@ -231,7 +242,11 @@ try{
 const booking = await EventBooking.findById(
 req.params.id
 )
-.populate("event");
+.populate("event")
+.populate(
+"user",
+"email firstName middleName lastName"
+);
 
 
 
@@ -384,6 +399,35 @@ new Date();
 await booking.save();
 
 
+try{
+
+
+await sendTicketReadyNotification(
+
+booking.user.email,
+
+booking.event,
+
+booking.ticketNumber
+
+);
+
+
+}catch(emailError){
+
+
+console.log(
+
+"TICKET EMAIL ERROR:",
+
+emailError.message
+
+);
+
+
+}
+
+
 
 
 
@@ -469,10 +513,6 @@ next(error);
 }
 
 };
-
-
-
-// CHECK IN EVENT TICKET
 
 
 

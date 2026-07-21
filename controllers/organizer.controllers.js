@@ -1,8 +1,20 @@
 const Organizer = require("../models/organizerSchema");
 const Auth = require("../models/auth.schema");
 const Event = require("../models/eventSchema");
+const EventBooking = require("../models/eventBookings");
 const bcrypt = require("bcryptjs");
 const errorHandler = require("../utils/error");
+const {
+
+sendOrganizerApplicationNotification,
+
+sendOrganizerProfileUpdateNotification,
+
+sendOrganizerPasswordChangedNotification,
+
+sendOrganizerDeleteNotification
+
+}=require("../utils/organizerNotifications");
 
 
 
@@ -116,7 +128,9 @@ description
 
 });
 
-
+await sendOrganizerApplicationNotification(
+email
+);
 
 
 
@@ -364,12 +378,451 @@ next(error);
 };
 
 
+
+// GET ORGANIZER BOOKINGS
+
+const getOrganizerBookings = async(req,res,next)=>{
+
+try{
+
+
+const organizer =
+await Organizer.findOne({
+
+user:req.user.id
+
+});
+
+
+if(!organizer){
+
+return next(
+errorHandler(
+404,
+"Organizer profile not found"
+)
+);
+
+}
+
+
+
+// Find organizer events
+
+const events =
+await Event.find({
+
+organizerProfile:organizer._id
+
+});
+
+
+const eventIds =
+events.map(
+event=>event._id
+);
+
+
+
+
+// Find bookings
+
+const bookings =
+await EventBooking.find({
+
+event:{
+$in:eventIds
+},
+
+paymentStatus:"paid",
+
+bookingStatus:"confirmed"
+
+})
+
+.populate(
+"user",
+"email firstName middleName lastName"
+)
+
+.populate(
+"event",
+"title date venue"
+)
+
+.sort({
+
+createdAt:-1
+
+});
+
+
+
+
+
+res.status(200).json({
+
+success:true,
+
+bookings
+
+});
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+};
+
+
+// UPDATE ORGANIZER PROFILE
+
+const updateOrganizerProfile = async(
+req,
+res,
+next
+)=>{
+
+
+try{
+
+
+const {
+
+businessName,
+
+contactName,
+
+phone,
+
+description
+
+}=req.body;
+
+
+
+const organizer =
+
+await Organizer.findOneAndUpdate(
+
+{
+
+user:req.user.id
+
+},
+
+{
+
+businessName,
+
+contactName,
+
+phone,
+
+description
+
+},
+
+{
+
+new:true
+
+}
+
+);
+
+
+
+if(!organizer){
+
+return next(
+
+errorHandler(
+
+404,
+
+"Organizer profile not found"
+
+)
+
+);
+
+}
+
+
+
+await sendOrganizerProfileUpdateNotification(
+organizer.email
+);
+
+
+res.status(200).json({
+
+message:
+"Organizer profile updated successfully",
+
+organizer
+
+});
+
+
+}catch(error){
+
+next(error);
+
+}
+
+
+};
+
+
+
+
+
+
+
+const changeOrganizerPassword = async(
+req,
+res,
+next
+)=>{
+
+
+try{
+
+
+const {
+
+currentPassword,
+
+newPassword,
+
+confirmPassword
+
+}=req.body;
+
+
+
+if(
+!currentPassword ||
+!newPassword ||
+!confirmPassword
+){
+
+return next(
+errorHandler(
+400,
+"All fields are required"
+)
+);
+
+}
+
+
+
+if(newPassword !== confirmPassword){
+
+return next(
+errorHandler(
+400,
+"Passwords do not match"
+)
+);
+
+}
+
+
+
+if(newPassword.length < 6){
+
+return next(
+errorHandler(
+400,
+"Password must be at least 6 characters"
+)
+);
+
+}
+
+
+
+
+const account =
+await Auth.findById(
+req.user.id
+);
+
+
+
+if(!account){
+
+return next(
+errorHandler(
+404,
+"Account not found"
+)
+);
+
+}
+
+
+
+const match =
+await bcrypt.compare(
+
+currentPassword,
+
+account.password
+
+);
+
+
+
+if(!match){
+
+return next(
+errorHandler(
+401,
+"Current password incorrect"
+)
+);
+
+}
+
+
+
+account.password =
+await bcrypt.hash(
+newPassword,
+10
+);
+
+
+
+await account.save();
+
+
+
+await sendOrganizerPasswordChangedNotification(
+account.email
+);
+
+
+
+res.status(200).json({
+
+message:
+"Password changed successfully"
+
+});
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+};
+
+
+// DELETE ORGANIZER ACCOUNT
+
+const deleteOrganizerProfile = async(
+req,
+res,
+next
+)=>{
+
+
+try{
+
+
+const organizer =
+
+await Organizer.findOneAndDelete({
+
+user:req.user.id
+
+});
+
+
+
+if(!organizer){
+
+return next(
+
+errorHandler(
+
+404,
+
+"Organizer profile not found"
+
+)
+
+);
+
+}
+
+
+
+
+const account =
+await Auth.findById(
+req.user.id
+);
+
+
+await sendOrganizerDeleteNotification(
+account.email
+);
+
+
+
+await Auth.findByIdAndDelete(
+req.user.id
+);
+
+
+
+
+res.status(200).json({
+
+message:
+"Organizer account deleted successfully"
+
+});
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+
+};
+
 module.exports={
 
 registerOrganizer,
 
 getOrganizerProfile,
 
-getOrganizerDashboard
+getOrganizerDashboard,
+
+getOrganizerBookings,
+
+updateOrganizerProfile,
+
+changeOrganizerPassword,
+
+deleteOrganizerProfile
 
 };

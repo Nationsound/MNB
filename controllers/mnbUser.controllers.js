@@ -1,5 +1,12 @@
 const MNBUser = require("../models/mnbUserSchema");
 const Auth = require("../models/auth.schema");
+const bcrypt = require('bcryptjs');
+const {
+  sendPasswordChangedNotification,
+  sendProfileUpdatedNotification,
+
+  sendAccountDeletedNotification
+} = require("../utils/notifications");
 
 
 // =======================================
@@ -307,6 +314,22 @@ message:"User profile not found"
 
 }
 
+// send notification
+
+try{
+
+await sendProfileUpdatedNotification(
+  updatedUser.user.email
+);
+
+}catch(emailError){
+
+console.log(
+"PROFILE UPDATE EMAIL ERROR:",
+emailError.message
+);
+
+}
 
 
 res.status(200).json({
@@ -371,7 +394,24 @@ message:"Profile not found"
 }
 
 
+if(account){
 
+try{
+
+await sendAccountDeletedNotification(
+account.email
+);
+
+}catch(emailError){
+
+console.log(
+"DELETE EMAIL ERROR:",
+emailError.message
+);
+
+}
+
+}
 
 // remove authentication account too
 
@@ -498,6 +538,132 @@ message:error.message
 };
 
 
+const changePassword = async (req, res) => {
+
+  try {
+
+    const {
+      currentPassword,
+      newPassword,
+      confirmPassword
+    } = req.body;
+
+    if (
+      !currentPassword ||
+      !newPassword ||
+      !confirmPassword
+    ) 
+    
+    {
+
+      return res.status(400).json({
+
+        message: "All fields are required"
+
+
+      });
+
+    }
+
+    if (newPassword !== confirmPassword) {
+
+      return res.status(400).json({
+
+        message: "Passwords do not match"
+
+      });
+
+    }
+
+    if (newPassword.length < 6) {
+
+      return res.status(400).json({
+
+        message: "Password must be at least 6 characters"
+
+      });
+
+    }
+
+    const account = await Auth.findById(
+      req.user.id
+    );
+
+    if (!account) {
+
+      return res.status(404).json({
+
+        message: "Account not found"
+
+      });
+
+    }
+
+    const match = await bcrypt.compare(
+
+      currentPassword,
+
+      account.password
+
+    );
+
+    if (!match) {
+
+      return res.status(401).json({
+
+        message: "Current password is incorrect"
+
+      });
+
+    }
+
+    account.password = await bcrypt.hash(
+
+  newPassword,
+
+  10
+
+);
+
+
+await account.save();
+
+
+try {
+
+  await sendPasswordChangedNotification(
+    account.email
+  );
+
+} catch(emailError) {
+
+  console.log(
+    "PASSWORD EMAIL ERROR:",
+    emailError.message
+  );
+
+}
+
+
+return res.status(200).json({
+
+  message: "Password changed successfully"
+
+});
+
+  } catch (error) {
+
+    console.log( "CHANGE PASSWORD ERROR:", error);
+
+    return res.status(500).json({
+
+      message: error.message
+
+    });
+
+  }
+
+};
 
 
 
@@ -515,7 +681,9 @@ deleteMNBUserProfile,
 
 getUserDashboard,
 
-checkMNBProfile
+checkMNBProfile, 
+
+changePassword
 
 
 };
