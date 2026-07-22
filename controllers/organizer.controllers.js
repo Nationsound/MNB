@@ -4,6 +4,7 @@ const Event = require("../models/eventSchema");
 const EventBooking = require("../models/eventBookings");
 const bcrypt = require("bcryptjs");
 const errorHandler = require("../utils/error");
+const { Parser } = require("json2csv");
 const {
 
 sendOrganizerApplicationNotification,
@@ -188,29 +189,28 @@ next
 try{
 
 
+if(req.user.accountType === "organizer"){
+
 const organizer =
-
 await Organizer.findOne({
-
 user:req.user.id
-
-}).populate(
-"user",
-"email"
-);
+});
 
 
-
-if(!organizer){
+if(
+!organizer ||
+event.organizerProfile.toString()
+!== organizer._id.toString()
+){
 
 return next(
-
 errorHandler(
-404,
-"Organizer profile not found"
+403,
+"You can only delete your own events"
 )
-
 );
+
+}
 
 }
 
@@ -234,6 +234,8 @@ next(error);
 
 
 const getOrganizerDashboard = async(req,res,next)=>{
+
+    
 
 try{
 
@@ -267,11 +269,30 @@ console.log("TYPE:", typeof Event);
 const events =
 await Event.find({
 
-organizerProfile:organizer._id
+organizerProfile: organizer._id,
+
+status:{
+$ne:"archived"
+}
 
 })
 .sort({
 createdAt:-1
+});
+
+
+// Archived Events
+
+const archivedEvents =
+await Event.find({
+
+organizerProfile: organizer._id,
+
+status:"archived"
+
+})
+.sort({
+archivedAt:-1
 });
 
 // Total events
@@ -359,7 +380,8 @@ revenue
 
 
 
-events
+events,
+archivedEvents
 
 
 });
@@ -467,6 +489,237 @@ success:true,
 bookings
 
 });
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+};
+
+
+
+// GET ORGANIZER ARCHIVED EVENTS
+
+const getOrganizerArchivedEvents = async(req,res,next)=>{
+
+try{
+
+
+const organizer =
+await Organizer.findOne({
+
+user:req.user.id
+
+});
+
+
+if(!organizer){
+
+return next(
+errorHandler(
+404,
+"Organizer profile not found"
+)
+);
+
+}
+
+
+
+const events =
+await Event.find({
+
+organizerProfile:organizer._id,
+
+status:"archived"
+
+})
+.sort({
+
+createdAt:-1
+
+});
+
+
+
+res.status(200).json({
+
+success:true,
+
+events
+
+});
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+};
+
+
+
+// GET ORGANIZER ANALYTICS
+
+const exportOrganizerAttendees = async(req,res,next)=>{
+
+try{
+
+
+const organizer =
+await Organizer.findOne({
+
+user:req.user.id
+
+});
+
+
+if(!organizer){
+
+return next(
+errorHandler(
+404,
+"Organizer profile not found"
+)
+);
+
+}
+
+
+
+
+const events =
+await Event.find({
+
+organizerProfile:organizer._id
+
+});
+
+
+
+const eventIds =
+events.map(
+event=>event._id
+);
+
+
+
+
+const bookings =
+await EventBooking.find({
+
+event:{
+$in:eventIds
+},
+
+paymentStatus:"paid",
+
+bookingStatus:"confirmed"
+
+})
+
+.populate(
+"user",
+"firstName middleName lastName email"
+)
+
+.populate(
+"event",
+"title date venue"
+);
+
+
+
+
+
+const rows=[];
+
+
+
+bookings.forEach(booking=>{
+
+
+booking.tickets.forEach(ticket=>{
+
+
+rows.push({
+
+Name:
+`${booking.user?.firstName || ""} ${booking.user?.middleName || ""} ${booking.user?.lastName || ""}`,
+
+Email:
+booking.user?.email,
+
+Event:
+booking.event?.title,
+
+EventDate:
+booking.event?.date,
+
+Venue:
+booking.event?.venue,
+
+TicketType:
+ticket.ticketType,
+
+Quantity:
+ticket.quantity,
+
+Amount:
+booking.totalAmount,
+
+TicketNumber:
+booking.ticketNumber,
+
+CheckedIn:
+booking.checkedIn ? "Yes":"No",
+
+PaymentStatus:
+booking.paymentStatus
+
+});
+
+
+});
+
+
+});
+
+
+
+
+
+const parser =
+new Parser();
+
+
+const csv =
+parser.parse(rows);
+
+
+
+
+
+res.header(
+"Content-Type",
+"text/csv"
+);
+
+
+res.attachment(
+"organizer-attendees.csv"
+);
+
+
+
+res.send(csv);
 
 
 
@@ -809,6 +1062,199 @@ next(error);
 
 };
 
+
+// GET ORGANIZER ANALYTICS
+
+const getOrganizerAnalytics = async(req,res,next)=>{
+
+try{
+
+const organizer =
+await Organizer.findOne({
+user:req.user.id
+});
+
+if(!organizer){
+
+return next(
+errorHandler(
+404,
+"Organizer profile not found"
+)
+);
+
+}
+
+const events =
+await Event.find({
+
+organizerProfile: organizer._id,
+
+status:{
+$ne:"archived"
+}
+
+})
+.sort({
+createdAt:-1
+});
+
+const eventIds =
+events.map(event=>event._id);
+
+const bookings =
+await EventBooking.find({
+
+event:{
+$in:eventIds
+}
+
+})
+.populate("event","title");
+
+
+
+let totalRevenue = 0;
+
+let totalBookings = bookings.length;
+
+let pendingPayments = 0;
+
+let paidBookings = 0;
+
+let checkedInGuests = 0;
+
+let ticketsSold = 0;
+
+const revenueByEvent = {};
+
+const ticketSalesByEvent = {};
+
+const monthlyRevenue = {};
+
+
+
+bookings.forEach(booking=>{
+
+const title =
+booking.event?.title || "Unknown Event";
+
+
+
+if(!revenueByEvent[title]){
+
+revenueByEvent[title]=0;
+
+}
+
+if(!ticketSalesByEvent[title]){
+
+ticketSalesByEvent[title]=0;
+
+}
+
+
+
+booking.tickets.forEach(ticket=>{
+
+ticketSalesByEvent[title]+=ticket.quantity;
+
+ticketsSold+=ticket.quantity;
+
+});
+
+
+
+if(booking.paymentStatus==="paid"){
+
+paidBookings++;
+
+totalRevenue+=booking.totalAmount;
+
+revenueByEvent[title]+=booking.totalAmount;
+
+}
+
+
+
+if(booking.paymentStatus==="pending"){
+
+pendingPayments++;
+
+}
+
+
+
+if(booking.checkedIn){
+
+checkedInGuests++;
+
+}
+
+
+
+const month =
+new Date(booking.createdAt)
+.toLocaleString("default",{
+month:"short",
+year:"numeric"
+});
+
+
+
+if(!monthlyRevenue[month]){
+
+monthlyRevenue[month]=0;
+
+}
+
+
+
+if(booking.paymentStatus==="paid"){
+
+monthlyRevenue[month]+=booking.totalAmount;
+
+}
+
+});
+
+
+
+res.status(200).json({
+
+summary:{
+
+totalRevenue,
+
+totalBookings,
+
+ticketsSold,
+
+paidBookings,
+
+pendingPayments,
+
+checkedInGuests
+
+},
+
+revenueByEvent,
+
+ticketSalesByEvent,
+
+monthlyRevenue
+
+});
+
+}catch(error){
+
+next(error);
+
+}
+
+};
+
+
 module.exports={
 
 registerOrganizer,
@@ -819,10 +1265,16 @@ getOrganizerDashboard,
 
 getOrganizerBookings,
 
+getOrganizerArchivedEvents,
+
+exportOrganizerAttendees,
+
 updateOrganizerProfile,
 
 changeOrganizerPassword,
 
-deleteOrganizerProfile
+deleteOrganizerProfile,
+
+getOrganizerAnalytics
 
 };

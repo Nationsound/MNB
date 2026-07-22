@@ -770,17 +770,18 @@ next(error);
 
 
 
-
-
-
-
 // DELETE EVENT
-
 
 const deleteEvent = async(req,res,next)=>{
 
 
-if(!req.user || !req.user.isAdmin){
+if(
+!req.user ||
+(
+!req.user.isAdmin &&
+req.user.accountType !== "organizer"
+)
+){
 
 return next(
 errorHandler(
@@ -817,8 +818,48 @@ errorHandler(
 
 
 
+// ORGANIZER CAN ONLY DELETE OWN EVENTS
+
+if(req.user.accountType === "organizer"){
 
 
+const organizer =
+await Organizer.findOne({
+
+user:req.user.id
+
+});
+
+
+
+if(
+!organizer ||
+!event.organizerProfile ||
+event.organizerProfile.toString()
+!==
+organizer._id.toString()
+
+){
+
+return next(
+errorHandler(
+403,
+"You can only delete your own events"
+)
+);
+
+}
+
+
+}
+
+
+
+
+
+
+
+// DELETE COVER IMAGE FROM CLOUDINARY
 
 if(event.imagePublicId){
 
@@ -836,8 +877,10 @@ event.imagePublicId
 
 
 
+// DELETE GALLERY IMAGES FROM CLOUDINARY
+
 for(
-const image of event.galleryImages
+const image of event.galleryImages || []
 ){
 
 
@@ -859,6 +902,9 @@ image.publicId
 
 
 
+
+// DELETE EVENT FROM DATABASE
+
 await Event.findByIdAndDelete(
 req.params.id
 );
@@ -867,7 +913,11 @@ req.params.id
 
 
 
+
+
 res.status(200).json({
+
+success:true,
 
 message:
 "Event deleted successfully"
@@ -878,9 +928,18 @@ message:
 
 
 
+
 }catch(error){
 
+
+console.error(
+"DELETE EVENT ERROR:",
+error
+);
+
+
 next(error);
+
 
 }
 
@@ -888,10 +947,56 @@ next(error);
 };
 
 
+// RESTORE EVENT
 
 
+const restoreEvent = async(req,res,next)=>{
+
+try{
+
+const event =
+await Event.findById(
+req.params.id
+);
 
 
+if(!event){
+
+return next(
+errorHandler(
+404,
+"Event not found"
+)
+);
+
+}
+
+
+event.status="published";
+
+event.archivedAt=null;
+
+
+await event.save();
+
+
+res.status(200).json({
+
+message:
+"Event restored successfully",
+
+event
+
+});
+
+
+}catch(error){
+
+next(error);
+
+}
+
+};
 
 
 
@@ -1022,6 +1127,208 @@ next(error);
 
 
 
+// DUPLICATE EVENT
+
+const duplicateEvent = async(req,res,next)=>{
+
+try{
+
+
+const event =
+await Event.findById(
+req.params.id
+);
+
+
+if(!event){
+
+return next(
+errorHandler(
+404,
+"Event not found"
+)
+);
+
+}
+
+
+
+const newEvent =
+await Event.create({
+
+...event.toObject(),
+
+_id:undefined,
+
+title:
+`${event.title} Copy`,
+
+slug:
+`${event.slug}-copy-${Date.now()}`,
+
+approvalStatus:"pending",
+
+status:"draft",
+
+createdAt:undefined,
+
+updatedAt:undefined
+
+});
+
+
+
+res.status(201).json({
+
+message:
+"Event duplicated successfully",
+
+event:newEvent
+
+});
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+};
+
+
+
+
+
+
+
+// PUBLISH / UNPUBLISH EVENT
+
+const toggleEventStatus = async(req,res,next)=>{
+
+try{
+
+
+const event =
+await Event.findById(
+req.params.id
+);
+
+
+if(!event){
+
+return next(
+errorHandler(
+404,
+"Event not found"
+)
+);
+
+}
+
+
+
+event.status =
+event.status === "published"
+
+?
+
+"draft"
+
+:
+
+"published";
+
+
+
+await event.save();
+
+
+
+res.status(200).json({
+
+message:
+`Event ${event.status}`,
+
+event
+
+});
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+};
+
+
+
+
+
+
+
+// ARCHIVE EVENT
+
+const archiveEvent = async(req,res,next)=>{
+
+try{
+
+
+const event =
+await Event.findById(
+req.params.id
+);
+
+
+
+if(!event){
+
+return next(
+errorHandler(
+404,
+"Event not found"
+)
+);
+
+}
+
+
+
+event.status="archived";
+
+event.archivedAt =
+new Date();
+
+
+
+await event.save();
+
+
+
+res.status(200).json({
+
+message:
+"Event archived successfully",
+
+event
+
+});
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+};
+
+
 
 module.exports={
 
@@ -1037,6 +1344,14 @@ updateEvent,
 
 deleteEvent,
 
-updateEventApproval
+restoreEvent,
+
+updateEventApproval,
+
+duplicateEvent,
+
+toggleEventStatus,
+
+archiveEvent
 
 };

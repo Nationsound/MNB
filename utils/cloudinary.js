@@ -18,50 +18,50 @@ cloudinary.config({
 
 
 
-const uploadBufferToCloudinary = (buffer)=>{
+const uploadBufferToCloudinary = (
+  buffer,
+  options={}
+)=>{
+
+return new Promise((resolve,reject)=>{
 
 
-  return new Promise((resolve,reject)=>{
+const stream =
+cloudinary.uploader.upload_stream(
+
+{
+resource_type:"auto",
+...options
+},
+
+(error,result)=>{
+
+if(error){
+
+reject(error);
+
+}else{
+
+resolve(result);
+
+}
+
+}
+
+);
 
 
-    const stream =
-    cloudinary.uploader.upload_stream(
 
-      {
-        resource_type:"image"
-      },
-
-      (error,result)=>{
+streamifier
+.createReadStream(buffer)
+.pipe(stream);
 
 
-        if(error){
 
-          reject(error);
-
-        }else{
-
-          resolve(result);
-
-        }
-
-
-      }
-
-    );
-
-
-    streamifier
-      .createReadStream(buffer)
-      .pipe(stream);
-
-
-  });
+});
 
 
 };
-
-
-
 
 
 module.exports = {

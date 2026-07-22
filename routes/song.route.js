@@ -1,46 +1,273 @@
-const express = require('express');
-const router = express.Router();
-const songController = require('../controllers/song.controllers.js');
-const upload = require('../multer.js');
+const express = require("express");
 
-function ensureSlugParam(req, res, next) {
-  if (!req.params.slug || typeof req.params.slug !== 'string') {
-    return res.status(400).json({ message: 'slug is required' });
-  }
-  next();
+const router = express.Router();
+
+const songController =
+require("../controllers/song.controllers.js");
+
+const upload =
+require("../multer.js");
+
+const verifyToken =
+require("../middleware/authMiddleware");
+
+
+
+
+
+// ================================
+// VALIDATE SLUG
+// ================================
+
+function ensureSlugParam(req,res,next){
+
+if(
+!req.params.slug ||
+typeof req.params.slug !== "string"
+){
+
+return res.status(400).json({
+
+message:"Slug is required"
+
+});
+
 }
 
-// Create
+
+next();
+
+}
+
+
+
+
+
+
+
+
+// ================================
+// ADMIN CREATE SONG
+// ================================
+
+
 router.post(
-  '/mnb/api/createSong',
-  upload.fields([
-    { name: 'audio', maxCount: 1 },
-    { name: 'coverImage', maxCount: 1 }, 
-  ]),
-  songController.createSong
+
+"/mnb/api/createSong",
+
+verifyToken,
+
+
+upload.fields([
+
+{
+name:"audio",
+maxCount:1
+},
+
+{
+name:"coverImage",
+maxCount:1
+}
+
+]),
+
+
+songController.createSong
+
 );
 
-// Get all (with optional ?page=&limit=)
-router.get('/mnb/api/getAllSongs', songController.getAllSongs);
 
-// Get single song by slug
-router.get('/mnb/api/getSongBySlug/:slug', ensureSlugParam, songController.getSongBySlug);
 
-// Optional convenience shorter route
-router.get('/mnb/api/songs/:slug', ensureSlugParam, songController.getSongBySlug);
 
-// Update song by slug
+
+
+
+
+
+// =================================
+// PUBLIC GET ALL SONGS
+// =================================
+
+
+router.get(
+
+"/mnb/api/songs",
+
+songController.getAllSongs
+
+);
+
+
+
+router.get(
+
+"/mnb/api/getAllSongs",
+
+songController.getAllSongs
+
+);
+
+
+
+
+
+
+
+
+
+// =================================
+// PUBLIC SINGLE SONG
+// =================================
+
+
+router.get(
+
+"/mnb/api/songs/:slug",
+
+ensureSlugParam,
+
+songController.getSongBySlug
+
+);
+
+
+
+router.get(
+
+"/mnb/api/getSongBySlug/:slug",
+
+ensureSlugParam,
+
+songController.getSongBySlug
+
+);
+
+
+
+
+
+
+
+
+
+// =================================
+// ADMIN UPDATE SONG
+// =================================
+
+
 router.put(
-  '/mnb/api/updateSong/:slug',
-  ensureSlugParam,
-  upload.fields([
-    { name: 'audio', maxCount: 1 },
-    { name: 'coverImage', maxCount: 1 },
-  ]),
-  songController.updateSong
+
+"/mnb/api/admin/updateSong/:slug",
+
+verifyToken,
+
+
+ensureSlugParam,
+
+
+upload.fields([
+
+{
+name:"audio",
+maxCount:1
+},
+
+{
+name:"coverImage",
+maxCount:1
+}
+
+]),
+
+
+songController.updateSong
+
 );
 
-// Delete song by slug
-router.delete('/mnb/api/deleteSong/:slug', ensureSlugParam, songController.deleteSong);
+
+
+
+
+
+
+
+
+// =================================
+// ADMIN DELETE SONG
+// =================================
+
+
+router.delete(
+
+"/mnb/api/admin/deleteSong/:slug",
+
+verifyToken,
+
+
+ensureSlugParam,
+
+
+songController.deleteSong
+
+);
+
+
+
+
+
+
+
+
+
+// =================================
+// STREAM SONG
+// =================================
+
+
+router.get(
+
+"/mnb/api/music/stream/:id",
+
+songController.streamSong
+
+);
+
+
+
+
+
+
+
+
+
+// =================================
+// DOWNLOAD SONG
+// =================================
+
+
+router.get(
+
+"/mnb/api/music/download/:id",
+
+songController.downloadSong
+
+);
+
+
+
+router.get(
+"/mnb/api/getTrendingSongs",
+songController.getTrendingSongs
+);
+
+
+router.get(
+
+"/mnb/api/music/genre/:genre",
+
+songController.getSongsByGenre
+
+);
 
 module.exports = router;

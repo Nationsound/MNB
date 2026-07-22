@@ -63,40 +63,54 @@ default:"bank_transfer"
 
 
 paymentStatus:{
+ type:String,
 
-type:String,
+ enum:[
 
-enum:[
+   "pending",
+   "paid",
+   "rejected",
 
-"pending",
-"paid",
-"rejected"
+   "refund_pending",
+   "refunded"
 
-],
+ ],
 
-default:"pending"
+ default:"pending"
 
 },
 
 
 
 bookingStatus:{
+ type:String,
 
-type:String,
+ enum:[
 
-enum:[
+   "pending",
+   "confirmed",
+   "cancelled",
 
-"pending",
-"confirmed",
-"cancelled"
+   "refund_requested",
+   "refunded"
 
-],
+ ],
 
-default:"pending"
+ default:"pending"
 
 },
 
+refundedAt:{
+type:Date,
+default:null
+},
 
+
+refundedBy:{
+type:mongoose.Schema.Types.ObjectId,
+ref:"Auth",
+default:null
+},
 
 paymentReference:{
 type:String,
@@ -161,7 +175,31 @@ checkedInBy: {
 
 verifiedAt:{
 type:Date
-}
+},
+
+refundReason:{
+type:String,
+default:""
+},
+
+
+refundRequestedAt:{
+type:Date,
+default:null
+},
+
+
+refundedAt:{
+type:Date,
+default:null
+},
+
+
+refundApprovedBy:{
+type:mongoose.Schema.Types.ObjectId,
+ref:"Auth",
+default:null
+},
 
 
 },

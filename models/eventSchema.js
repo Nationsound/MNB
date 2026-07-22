@@ -258,10 +258,31 @@ ref:"Auth",
 
 required:false
 
-}
+},
 
 
+status:{
 
+type:String,
+
+enum:[
+"draft",
+"published",
+"archived"
+],
+
+default:"draft"
+
+},
+
+
+archivedAt:{
+
+type:Date,
+
+default:null
+
+},
 
 
 },{

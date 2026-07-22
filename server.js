@@ -33,6 +33,12 @@ const eventRoutes = require('./routes/event.routes.js');
 const eventBookingRoutes = require('./routes/event.booking.routes.js');
 const organizerRoutes = require('./routes/organizer.routes.js');
 const mnbUserRoutes = require('./routes/mnbUser.routes.js');
+const albumRoutes = require('./routes/album.routes.js');
+const musicSearchRoutes = require('./routes/musicSearch.routes.js');
+
+
+
+
 
 // Server port
 const port = process.env.PORT || 1990;
@@ -104,6 +110,14 @@ app.use('/', eventRoutes);
 app.use('/', eventBookingRoutes);
 app.use('/', organizerRoutes);
 app.use('/', mnbUserRoutes);
+app.use('/', albumRoutes);
+app.use('/', musicSearchRoutes);
+
+
+
+
+
+
 
 // ✅ 8. Global error handler (last)
 app.use((err, req, res, next) => {

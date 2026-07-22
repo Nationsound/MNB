@@ -87,6 +87,12 @@ eventController.deleteEvent
 );
 
 
+// Restore Event
+router.put(
+"/mnb/api/restoreEvent/:id",
+verifyToken,
+eventController.restoreEvent
+);
 
 
 // Get all Events
@@ -120,6 +126,38 @@ eventController.getEvent
 );
 
 
+router.post(
 
+"/mnb/api/events/:id/duplicate",
+
+verifyToken,
+
+eventController.duplicateEvent
+
+);
+
+
+
+router.patch(
+
+"/mnb/api/events/:id/toggle-status",
+
+verifyToken,
+
+eventController.toggleEventStatus
+
+);
+
+
+
+router.patch(
+
+"/mnb/api/events/:id/archive",
+
+verifyToken,
+
+eventController.archiveEvent
+
+);
 
 module.exports = router;

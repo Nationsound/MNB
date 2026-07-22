@@ -515,6 +515,299 @@ next(error);
 };
 
 
+// REQUEST REFUND
+
+const requestBookingRefund = async(req,res,next)=>{
+
+try{
+
+
+const booking =
+await EventBooking.findById(
+req.params.id
+);
+
+
+
+if(!booking){
+
+return next(
+errorHandler(
+404,
+"Booking not found"
+)
+);
+
+}
+
+if(
+booking.user.toString() !== req.user.id
+){
+
+return next(
+errorHandler(
+403,
+"You can only refund your own booking"
+)
+);
+
+}
+
+if(
+booking.paymentStatus !== "paid"
+){
+
+return next(
+errorHandler(
+400,
+"Only paid bookings can be refunded"
+)
+);
+
+}
+
+
+
+if(
+booking.checkedIn
+){
+
+return next(
+errorHandler(
+400,
+"Checked in tickets cannot be refunded"
+)
+);
+
+}
+
+
+
+booking.bookingStatus =
+"refund_requested";
+
+
+booking.paymentStatus =
+"refund_pending";
+
+
+booking.refundReason =
+req.body.reason || "";
+
+
+booking.refundRequestedAt =
+new Date();
+
+
+
+await booking.save();
+
+
+
+res.status(200).json({
+
+success:true,
+
+message:
+"Refund request submitted",
+
+booking
+
+});
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+};
+
+
+
+// GET REFUND REQUESTS (ADMIN)
+
+const getRefundRequests = async(req,res,next)=>{
+
+try{
+
+
+const bookings =
+await EventBooking.find({
+
+paymentStatus:"refund_pending"
+
+})
+
+.populate(
+"user",
+"email firstName middleName lastName"
+)
+
+.populate(
+"event",
+"title date venue"
+)
+
+.sort({
+
+refundRequestedAt:-1
+
+});
+
+
+
+res.status(200).json({
+
+success:true,
+
+bookings
+
+});
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+};
+
+
+
+// APPROVE REFUND
+
+const approveRefund = async(req,res,next)=>{
+
+try{
+
+
+const booking =
+await EventBooking.findById(
+req.params.id
+);
+
+
+
+if(!booking){
+
+return next(
+errorHandler(
+404,
+"Booking not found"
+)
+);
+
+}
+
+
+
+booking.paymentStatus =
+"refunded";
+
+
+booking.bookingStatus =
+"refunded";
+
+
+booking.refundedAt =
+new Date();
+
+
+booking.refundApprovedBy =
+req.user.id;
+
+
+booking.refundedAt = new Date();
+booking.refundedBy = req.user.id;
+
+await booking.save();
+
+
+
+res.status(200).json({
+
+success:true,
+
+message:
+"Refund completed",
+
+booking
+
+});
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+};
+
+
+
+// GET ALL REFUNDED BOOKINGS (ADMIN)
+
+const getAllRefundedBookings = async(req,res,next)=>{
+
+try{
+
+
+const bookings =
+await EventBooking.find({
+
+paymentStatus:"refunded"
+
+})
+
+.populate(
+"user",
+"email"
+)
+
+.populate(
+"event",
+"title date venue"
+)
+
+.populate(
+"refundedBy",
+"email"
+)
+
+.sort({
+
+refundedAt:-1
+
+});
+
+
+
+res.status(200).json({
+
+success:true,
+
+bookings
+
+});
+
+
+
+}catch(error){
+
+next(error);
+
+}
+
+
+};
+
 
 // CHECK IN EVENT TICKET
 
@@ -655,6 +948,14 @@ getAllEventBookings,
 verifyEventPayment,
 
 rejectEventPayment,
+
+requestBookingRefund,
+
+getRefundRequests,
+
+approveRefund,
+
+getAllRefundedBookings,
 
 checkInEventTicket,
 

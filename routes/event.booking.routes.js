@@ -74,6 +74,38 @@ eventBookingControllers.rejectEventPayment
 );
 
 
+// REQUEST BOOKING REFUND
+
+router.patch(
+"/mnb/api/eventbooking/:id/request-refund",
+verifyToken,
+eventBookingControllers.requestBookingRefund
+);
+
+// GET REFUND REQUESTS
+
+router.get(
+"/mnb/api/admin/eventbooking/refund-requests",
+verifyToken,
+eventBookingControllers.getRefundRequests
+);
+
+
+// APPROVE REFUND
+
+router.patch(
+"/mnb/api/admin/eventbooking/:id/refund",
+verifyToken,
+eventBookingControllers.approveRefund
+);
+
+// ADMIN REFUNDED BOOKINGS
+router.get(
+"/mnb/api/admin/eventbooking/refunded",
+verifyToken,
+eventBookingControllers.getAllRefundedBookings
+);
+
 // CHECK IN TICKET
 
 router.put(

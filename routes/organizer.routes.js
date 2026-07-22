@@ -71,6 +71,29 @@ organizerController.getOrganizerBookings
 
 );
 
+router.get(
+
+"/mnb/api/organizer/archived-events",
+
+verifyToken,
+
+organizerController.getOrganizerArchivedEvents
+
+);
+
+
+// Export Organizer Attendees
+
+router.get(
+
+"/mnb/api/organizer/export-attendees",
+
+verifyToken,
+
+organizerController.exportOrganizerAttendees
+
+);
+
 // UPDATE ORGANIZER PROFILE
 
 router.put(
@@ -110,5 +133,12 @@ organizerController.deleteOrganizerProfile
 );
 
 
+// GET ORGANIZER ANALYTICS
+
+router.get(
+"/mnb/api/organizer/analytics",
+verifyToken,
+organizerController.getOrganizerAnalytics
+);
 
 module.exports = router;
