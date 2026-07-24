@@ -98,6 +98,14 @@ trim:true
 },
 
 
+lyrics:{
+type:String,
+trim:true,
+maxlength:10000,
+default:""
+},
+
+
 
 
 

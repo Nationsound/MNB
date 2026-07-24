@@ -19,6 +19,7 @@ const {
 
 const createSong = async(req,res,next)=>{
 
+console.log("🔥 CREATE SONG CONTROLLER HIT");
 
 try{
 
@@ -40,7 +41,11 @@ genre,
 
 description,
 
-releaseDate
+releaseDate,
+
+lyrics,
+
+featured
 
 
 }=req.body;
@@ -318,6 +323,15 @@ overwrite:true
 
 
 const song =
+
+console.log("NEW SONG DATA:", {
+ title,
+ artistName,
+ genre,
+ lyrics,
+ featured,
+ typeofFeatured: typeof featured
+});
 await Song.create({
 
 title,
@@ -363,7 +377,10 @@ coverUpload?.secure_url,
 coverImagePublicId:
 coverUpload?.public_id,
 
+lyrics,
 
+featured:
+featured === "true" || featured === true,
 
 releaseDate:
 releaseDate || Date.now()
@@ -601,6 +618,10 @@ genre,
 
 description,
 
+lyrics,
+
+featured,
+
 releaseDate
 
 
@@ -648,6 +669,10 @@ genre ?? song.genre,
 description:
 description ?? song.description,
 
+lyrics,
+
+featured:
+featured === "true" || featured === true,
 
 releaseDate:
 releaseDate ?? song.releaseDate
@@ -1162,6 +1187,99 @@ next(error);
 };
 
 
+// ========================================
+// LATEST SONGS
+// ========================================
+
+const getLatestSongs = async(req,res,next)=>{
+
+try{
+
+
+const songs =
+await Song.find()
+
+.populate(
+"artistId",
+"name slug profileImageUrl"
+)
+
+.populate(
+"album"
+)
+
+.sort({
+createdAt:-1
+})
+
+.limit(20);
+
+
+
+res.json({
+
+success:true,
+
+songs
+
+});
+
+
+}catch(error){
+
+next(error);
+
+}
+
+
+};
+
+
+// ========================================
+// FEATURED RELEASE
+// ========================================
+
+const getFeaturedSong = async(req,res,next)=>{
+
+try{
+
+
+const song =
+await Song.findOne({
+featured:true
+})
+.populate(
+"artistId",
+"name slug profileImageUrl"
+)
+.populate(
+"album"
+);
+
+
+
+console.log("FEATURED SONG:", song);
+
+
+
+res.json({
+
+success:true,
+
+song
+
+});
+
+
+}catch(error){
+
+next(error);
+
+}
+
+
+};
+
 
 
 // ========================================
@@ -1247,6 +1365,10 @@ streamSong,
 downloadSong,
 
 getTrendingSongs,
+
+getLatestSongs,
+
+getFeaturedSong,
 
 getSongsByGenre
 

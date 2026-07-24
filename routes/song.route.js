@@ -55,6 +55,11 @@ router.post(
 
 "/mnb/api/createSong",
 
+(req,res,next)=>{
+        console.log("CREATE SONG ROUTE HIT");
+        next();
+    },
+
 verifyToken,
 
 
@@ -78,13 +83,6 @@ songController.createSong
 );
 
 
-
-
-
-
-
-
-
 // =================================
 // PUBLIC GET ALL SONGS
 // =================================
@@ -94,7 +92,7 @@ router.get(
 
 "/mnb/api/songs",
 
-songController.getAllSongs
+songController.getAllSongs 
 
 );
 
@@ -107,11 +105,6 @@ router.get(
 songController.getAllSongs
 
 );
-
-
-
-
-
 
 
 
@@ -142,11 +135,6 @@ ensureSlugParam,
 songController.getSongBySlug
 
 );
-
-
-
-
-
 
 
 
@@ -260,6 +248,19 @@ router.get(
 "/mnb/api/getTrendingSongs",
 songController.getTrendingSongs
 );
+
+
+router.get(
+"/mnb/api/getLatestSongs",
+songController.getLatestSongs
+);
+
+
+router.get(
+"/mnb/api/getFeaturedSong",
+songController.getFeaturedSong
+);
+
 
 
 router.get(
