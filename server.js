@@ -46,7 +46,7 @@ const port = process.env.PORT || 1990;
 // ✅ 2. Global CORS (for API routes)
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://mnb-pqef.onrender.com/", "https://www.mynationblog.fun"],
+    origin: ["http://localhost:5173", "https://mnb-pqef.onrender.com/", "https://www.mynationblog.fun", "https://my-nation-blog-wp4o.vercel.app"],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   })
@@ -56,7 +56,8 @@ app.use(
 const allowedOrigins = [
   "http://localhost:5173",
   "https://www.mynationblog.fun",
-  "https://mnb-pqef.onrender.com"
+  "https://mnb-pqef.onrender.com",
+  "https://my-nation-blog-wp4o.vercel.app"
 ];
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {

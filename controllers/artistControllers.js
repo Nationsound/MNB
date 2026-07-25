@@ -2,59 +2,53 @@ const Artist = require("../models/artistSchema");
 const Song = require("../models/songSchema");
 const Album = require("../models/albumSchema");
 
-const cloudinary = require("../utils/cloudinary");
-const streamifier = require("streamifier");
+const {
+  cloudinary,
+  uploadBufferToCloudinary
+} = require("../utils/cloudinary");
+
+
+const sharp = require("sharp");
 
 
 
 
 
 // ==============================
-// CLOUDINARY UPLOAD HELPER
+// IMAGE COMPRESSION
 // ==============================
 
-const uploadBufferToCloudinary = (
-  buffer,
-  folder = "mnb/artists"
-)=>{
 
-return new Promise((resolve,reject)=>{
+const compressImage = async(buffer)=>{
 
 
-const stream =
-cloudinary.uploader.upload_stream(
+return await sharp(buffer)
 
-{
-folder,
-resource_type:"image"
-},
+.resize({
 
-(error,result)=>{
+width:1200,
 
-if(error){
+height:1200,
 
-reject(error);
+fit:"inside",
 
-}else{
+withoutEnlargement:true
 
-resolve(result);
-
-}
-
-}
-
-);
+})
 
 
-streamifier
-.createReadStream(buffer)
-.pipe(stream);
+.webp({
+
+quality:80
+
+})
 
 
-});
+.toBuffer();
 
 
 };
+
 
 
 
@@ -101,9 +95,8 @@ name,
 
 bio,
 
+
 country:
-
-
 country || "Nigeria",
 
 
@@ -111,22 +104,28 @@ country || "Nigeria",
 genre:
 
 genre
+
 ?
+
 JSON.parse(genre)
+
 :
+
 [],
+
 
 
 
 featured:
 
-featured === "true",
+featured === "true" || featured === true,
+
 
 
 
 verified:
 
-verified === "true",
+verified === "true" || verified === true,
 
 
 
@@ -135,19 +134,20 @@ verified === "true",
 socialLinks:{
 
 
-instagram: instagram || "",
+instagram:instagram || "",
 
-twitter: twitter || "",
+twitter:twitter || "",
 
-youtube: youtube || "",
+youtube:youtube || "",
 
-spotify: spotify || ""
+spotify:spotify || ""
 
 }
 
 
-
 };
+
+
 
 
 
@@ -161,10 +161,27 @@ spotify: spotify || ""
 if(req.file){
 
 
-const upload =
-await uploadBufferToCloudinary(
+
+const compressed =
+await compressImage(
 req.file.buffer
 );
+
+
+
+
+const upload =
+
+await uploadBufferToCloudinary(
+
+compressed,
+
+"mnb/artists"
+
+);
+
+
+
 
 
 
@@ -172,12 +189,14 @@ artistData.profileImageUrl =
 upload.secure_url;
 
 
+
 artistData.profileImagePublicId =
 upload.public_id;
 
 
 
-// OLD SUPPORT
+// backwards compatibility
+
 
 artistData.imageUrl =
 upload.secure_url;
@@ -196,8 +215,8 @@ upload.public_id;
 
 
 
-
 const artist =
+
 await Artist.create(
 artistData
 );
@@ -209,12 +228,15 @@ artistData
 
 res.status(201).json({
 
-message:"Artist created successfully",
+
+message:
+"Artist created successfully",
+
 
 artist
 
-});
 
+});
 
 
 
@@ -233,7 +255,10 @@ error
 
 res.status(500).json({
 
-message:"Failed creating artist"
+message:
+"Failed creating artist",
+
+error:error.message
 
 });
 
@@ -243,9 +268,6 @@ message:"Failed creating artist"
 
 
 };
-
-
-
 
 
 
@@ -267,10 +289,16 @@ try{
 
 
 const artists =
+
 await Artist.find()
+
 .sort({
+
 createdAt:-1
+
 });
+
+
 
 
 
@@ -282,6 +310,8 @@ artists
 
 
 
+
+
 }catch(error){
 
 
@@ -290,7 +320,8 @@ console.log(error);
 
 res.status(500).json({
 
-message:"Failed fetching artists"
+message:
+"Failed fetching artists"
 
 });
 
@@ -321,6 +352,7 @@ try{
 
 
 const artist =
+
 await Artist.findOne({
 
 slug:req.params.slug
@@ -336,7 +368,8 @@ if(!artist){
 
 return res.status(404).json({
 
-message:"Artist not found"
+message:
+"Artist not found"
 
 });
 
@@ -347,15 +380,35 @@ message:"Artist not found"
 
 
 
-// FIND ARTIST SONGS
+
+
+
+
+// ==============================
+// FETCH ARTIST SONGS
+// SUPPORT OLD + NEW DATA
+// ==============================
+
 
 const songs =
+
 await Song.find({
 
-artist:
-artist._id
+$or:[
+
+{
+artistId:artist._id
+},
+
+
+{
+artist:artist.name
+}
+
+]
 
 })
+
 .sort({
 
 createdAt:-1
@@ -368,15 +421,33 @@ createdAt:-1
 
 
 
-// FIND ARTIST ALBUMS
+
+
+// ==============================
+// FETCH ALBUMS
+// SUPPORT OLD + NEW DATA
+// ==============================
+
 
 const albums =
+
 await Album.find({
 
-artist:
-artist._id
+$or:[
+
+{
+artistId:artist._id
+},
+
+
+{
+artist:artist.name
+}
+
+]
 
 })
+
 .sort({
 
 createdAt:-1
@@ -387,15 +458,213 @@ createdAt:-1
 
 
 
+
+
+
+
+// ==============================
+// TOTAL STREAM CALCULATION
+// ==============================
+
+
+const totalStreams =
+
+songs.reduce(
+
+(total,song)=>{
+
+return total + (song.streams || 0);
+
+},
+
+0
+
+);
+
+
+
+
+
+
+
+
+
+// ==============================
+// TOP SONGS
+// ==============================
+
+
+const topSongs =
+
+[...songs]
+
+.sort(
+
+(a,b)=>
+
+(b.streams || 0)
+
+-
+
+(a.streams || 0)
+
+)
+
+.slice(0,5);
+
+
+
+
+
+
+
+
+
+// ==============================
+// RELATED ARTISTS
+// ==============================
+
+
+const relatedArtists =
+
+await Artist.find({
+
+genre:{
+
+$in:artist.genre
+
+},
+
+
+_id:{
+
+$ne:artist._id
+
+}
+
+})
+
+.limit(6)
+
+.select(
+
+"name slug profileImageUrl verified genre"
+
+);
+
+
+
+
+
+
+
+
+
+// ==============================
+// ANALYTICS
+// ==============================
+
+
+const analytics = {
+
+
+totalSongs:
+songs.length,
+
+
+totalAlbums:
+albums.length,
+
+
+totalStreams,
+
+
+topSongs,
+
+
+weeklyStreams:
+artist.weeklyStreams || 0,
+
+
+weeklyListeners:
+artist.weeklyListeners || 0,
+
+
+listenerHistory:
+artist.listenerHistory || []
+
+};
+
+
+
+
+
+
+
+
+
+// ==============================
+// FINAL RESPONSE
+// ==============================
 
 
 res.json({
 
 artist,
 
+
 songs,
 
-albums
+
+albums,
+
+
+relatedArtists,
+
+
+stats:{
+
+
+followers:
+
+Array.isArray(
+artist.followersList
+)
+
+?
+
+artist.followersList.length
+
+:
+
+artist.followers || 0,
+
+
+
+monthlyListeners:
+
+artist.monthlyListeners || 0,
+
+
+
+streams:
+
+totalStreams,
+
+
+
+views:
+
+artist.views || 0
+
+
+},
+
+
+
+analytics
+
+
 
 });
 
@@ -409,15 +678,19 @@ albums
 
 
 console.log(
+
 "Artist details error:",
+
 error
+
 );
 
 
 
 res.status(500).json({
 
-message:"Failed loading artist"
+message:
+"Failed loading artist"
 
 });
 
@@ -427,13 +700,6 @@ message:"Failed loading artist"
 
 
 };
-
-
-
-
-
-
-
 
 
 // ==============================
@@ -448,8 +714,11 @@ try{
 
 
 const artist =
+
 await Artist.findById(
+
 req.params.id
+
 );
 
 
@@ -461,13 +730,13 @@ if(!artist){
 
 return res.status(404).json({
 
-message:"Artist not found"
+message:
+"Artist not found"
 
 });
 
 
 }
-
 
 
 
@@ -496,22 +765,28 @@ spotify
 
 
 
+
+
 const updateData={
 
 
 
 name:
+
 name ?? artist.name,
 
 
 
 bio:
+
 bio ?? artist.bio,
 
 
 
 country:
+
 country ?? artist.country,
+
 
 
 
@@ -532,21 +807,25 @@ artist.genre,
 
 
 
-
-
 featured:
 
 featured !== undefined
 
 ?
 
-featured === "true"
+(
+
+featured==="true"
+
+||
+
+featured===true
+
+)
 
 :
 
 artist.featured,
-
-
 
 
 
@@ -558,7 +837,15 @@ verified !== undefined
 
 ?
 
-verified === "true"
+(
+
+verified==="true"
+
+||
+
+verified===true
+
+)
 
 :
 
@@ -575,24 +862,29 @@ socialLinks:{
 
 
 instagram:
+
 instagram ?? artist.socialLinks?.instagram,
 
 
+
 twitter:
+
 twitter ?? artist.socialLinks?.twitter,
 
 
+
 youtube:
+
 youtube ?? artist.socialLinks?.youtube,
 
 
+
 spotify:
+
 spotify ?? artist.socialLinks?.spotify
 
 
-
 }
-
 
 
 };
@@ -604,41 +896,67 @@ spotify ?? artist.socialLinks?.spotify
 
 
 
-// UPDATE IMAGE
+
+// NEW IMAGE
 
 
 if(req.file){
 
 
 
-const upload =
-await uploadBufferToCloudinary(
+const compressed =
+
+await compressImage(
+
 req.file.buffer
+
 );
 
 
 
 
+
+const upload =
+
+await uploadBufferToCloudinary(
+
+compressed,
+
+"mnb/artists"
+
+);
+
+
+
+
+
+
 updateData.profileImageUrl =
+
 upload.secure_url;
 
 
 
 updateData.profileImagePublicId =
+
 upload.public_id;
 
 
 
 
 
-// backwards compatibility
+// old support
+
 
 updateData.imageUrl =
+
 upload.secure_url;
 
 
 updateData.imagePublicId =
+
 upload.public_id;
+
 
 
 
@@ -650,9 +968,19 @@ upload.public_id;
 // DELETE OLD IMAGE
 
 
-if(
+const oldImage =
+
 artist.profileImagePublicId
-){
+
+||
+
+artist.imagePublicId;
+
+
+
+
+
+if(oldImage){
 
 
 try{
@@ -660,10 +988,12 @@ try{
 
 await cloudinary.uploader.destroy(
 
-artist.profileImagePublicId,
+oldImage,
 
 {
+
 resource_type:"image"
+
 }
 
 );
@@ -673,21 +1003,22 @@ resource_type:"image"
 
 
 console.log(
-"Cloudinary delete error:",
+
+"Old image delete failed:",
+
 err.message
+
 );
 
 
 }
 
 
-
 }
 
 
 
 }
-
 
 
 
@@ -705,7 +1036,9 @@ req.params.id,
 updateData,
 
 {
+
 new:true
+
 }
 
 );
@@ -718,7 +1051,8 @@ new:true
 
 res.json({
 
-message:"Artist updated successfully",
+message:
+"Artist updated successfully",
 
 artist:updatedArtist
 
@@ -730,21 +1064,25 @@ artist:updatedArtist
 
 
 
-
-
 }catch(error){
 
 
 console.log(
+
 "Update Artist Error:",
+
 error
+
 );
 
 
 
 res.status(500).json({
 
-message:"Failed updating artist"
+message:
+"Failed updating artist",
+
+error:error.message
 
 });
 
@@ -754,9 +1092,6 @@ message:"Failed updating artist"
 
 
 };
-
-
-
 
 
 
@@ -778,9 +1113,13 @@ try{
 
 
 const artist =
+
 await Artist.findById(
+
 req.params.id
+
 );
+
 
 
 
@@ -790,7 +1129,8 @@ if(!artist){
 
 return res.status(404).json({
 
-message:"Artist not found"
+message:
+"Artist not found"
 
 });
 
@@ -816,8 +1156,6 @@ artist.imagePublicId;
 
 
 
-
-
 if(imageId){
 
 
@@ -829,18 +1167,24 @@ await cloudinary.uploader.destroy(
 imageId,
 
 {
+
 resource_type:"image"
+
 }
 
 );
 
 
-}catch(error){
+
+}catch(err){
 
 
 console.log(
+
 "Cloudinary delete error:",
-error.message
+
+err.message
+
 );
 
 
@@ -848,8 +1192,6 @@ error.message
 
 
 }
-
-
 
 
 
@@ -857,8 +1199,11 @@ error.message
 
 
 await Artist.findByIdAndDelete(
+
 req.params.id
+
 );
+
 
 
 
@@ -866,11 +1211,10 @@ req.params.id
 
 res.json({
 
-message:"Artist deleted successfully"
+message:
+"Artist deleted successfully"
 
 });
-
-
 
 
 
@@ -885,7 +1229,8 @@ console.log(error);
 
 res.status(500).json({
 
-message:"Failed deleting artist"
+message:
+"Failed deleting artist"
 
 });
 

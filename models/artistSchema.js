@@ -21,11 +21,13 @@ trim:true
 
 
 
+
 bio:{
 type:String,
 trim:true,
 default:""
 },
+
 
 
 
@@ -73,6 +75,7 @@ default:"Nigeria"
 
 
 
+
 socialLinks:{
 
 
@@ -97,6 +100,30 @@ default:""
 spotify:{
 type:String,
 default:""
+},
+
+
+appleMusic:{
+type:String,
+default:""
+},
+
+
+soundcloud:{
+type:String,
+default:""
+},
+
+
+tiktok:{
+type:String,
+default:""
+},
+
+
+website:{
+type:String,
+default:""
 }
 
 
@@ -106,11 +133,14 @@ default:""
 
 
 
+
+
+// Artist status
+
 featured:{
 type:Boolean,
 default:false
 },
-
 
 
 
@@ -123,6 +153,11 @@ default:false
 
 
 
+// ==========================
+// FOLLOW SYSTEM
+// ==========================
+
+
 followers:{
 type:Number,
 default:0
@@ -130,8 +165,23 @@ default:0
 
 
 
+followersList:[
+{
+type:mongoose.Schema.Types.ObjectId,
+ref:"User"
+}
+],
 
-// Music statistics
+
+
+
+
+
+
+// ==========================
+// STREAM ANALYTICS
+// ==========================
+
 
 streams:{
 type:Number,
@@ -139,10 +189,12 @@ default:0
 },
 
 
+
 monthlyListeners:{
 type:Number,
 default:0
 },
+
 
 
 views:{
@@ -152,8 +204,70 @@ default:0
 
 
 
+likes:{
+type:Number,
+default:0
+},
 
-// future artist account
+
+
+
+
+// popularity score
+// used for ranking artists
+
+popularityScore:{
+type:Number,
+default:0
+},
+
+
+
+
+
+
+// ==========================
+// CHART ANALYTICS
+// ==========================
+
+
+weeklyStreams:{
+type:Number,
+default:0
+},
+
+
+
+weeklyListeners:{
+type:Number,
+default:0
+},
+
+
+
+topCountries:[
+{
+
+country:{
+type:String
+},
+
+
+listeners:{
+type:Number,
+default:0
+}
+
+}
+],
+
+
+
+
+// ==========================
+// FUTURE ARTIST ACCOUNT
+// ==========================
+
 
 userId:{
 type:mongoose.Schema.Types.ObjectId,
@@ -170,6 +284,8 @@ timestamps:true
 }
 
 );
+
+
 
 
 
@@ -206,6 +322,7 @@ next();
 
 
 });
+
 
 
 

@@ -324,14 +324,14 @@ overwrite:true
 
 const song =
 
-console.log("NEW SONG DATA:", {
- title,
- artistName,
- genre,
- lyrics,
- featured,
- typeofFeatured: typeof featured
-});
+// console.log("NEW SONG DATA:", {
+//  title,
+//  artistName,
+//  genre,
+//  lyrics,
+//  featured,
+//  typeofFeatured: typeof featured
+// });
 await Song.create({
 
 title,
