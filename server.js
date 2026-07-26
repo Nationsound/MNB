@@ -35,6 +35,12 @@ const organizerRoutes = require('./routes/organizer.routes.js');
 const mnbUserRoutes = require('./routes/mnbUser.routes.js');
 const albumRoutes = require('./routes/album.routes.js');
 const musicSearchRoutes = require('./routes/musicSearch.routes.js');
+const streamRoutes = require('./routes/stream.route.js');
+const playlistRoutes = require('./routes/playlistroutes.js');
+const recentlyPlayedRoutes = require('./routes/recentlyPlayed.route.js');
+const artistFollowRoutes = require('./routes/artistFollow.route.js');
+const likedSongRoutes = require('./routes/likedSong.route.js');
+const externalSearchRoutes = require("./routes/externalSearch.route.js");
 
 
 
@@ -113,7 +119,12 @@ app.use('/', organizerRoutes);
 app.use('/', mnbUserRoutes);
 app.use('/', albumRoutes);
 app.use('/', musicSearchRoutes);
-
+app.use('/', streamRoutes);
+app.use('/', playlistRoutes);
+app.use('/', recentlyPlayedRoutes);
+app.use('/', artistFollowRoutes);
+app.use('/', likedSongRoutes);
+app.use("/", externalSearchRoutes);
 
 
 
@@ -123,6 +134,10 @@ app.use('/', musicSearchRoutes);
 // ✅ 8. Global error handler (last)
 app.use((err, req, res, next) => {
   console.error(err.stack);
+  res.set(
+"Cache-Control",
+"no-store"
+);
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({ error: err.message || 'Something went wrong' });
 });
