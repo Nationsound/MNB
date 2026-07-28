@@ -19,4 +19,4 @@ router.get('/mnb/api/getAllPosts', postController.getAllBlogs);
 // Get single post by slug
 router.get('/mnb/api/getPost/:slug', postController.getBlogBySlug);
 
-module.exports = router;
+module.exports = router; 

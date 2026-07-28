@@ -1,18 +1,9 @@
 const Post = require('../models/post.schema');
 const errorHandler = require('../utils/error');
-const cloudinary = require('../utils/cloudinary');
-const streamifier = require('streamifier');
-
-// helper: upload buffer to Cloudinary
-function uploadBufferToCloudinary(buffer, folder = process.env.CLOUDINARY_FOLDER || 'mnb') {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: 'image' },
-      (err, result) => (err ? reject(err) : resolve(result))
-    );
-    streamifier.createReadStream(buffer).pipe(stream); 
-  });
-}
+const {
+ cloudinary,
+ uploadBufferToCloudinary
+} = require("../utils/cloudinary");
 
 // Create a new post
 const createBlog = async (req, res, next) => {

@@ -14,7 +14,7 @@ router.post(
   upload.fields([
     {
       name: "image",
-      maxCount: 1
+      maxCount: 1 
     },
     {
       name: "galleryImages",
