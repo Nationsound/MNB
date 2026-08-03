@@ -178,57 +178,35 @@ next(error);
 
 // Get Organizer Profile
 
+const getOrganizerProfile = async (req, res, next) => {
+  try {
+    if (req.user.accountType !== "organizer") {
+      return next(
+        errorHandler(
+          403,
+          "Only organizers can access this profile."
+        )
+      );
+    }
 
-const getOrganizerProfile = async(
-req,
-res,
-next
-)=>{
+    const organizer = await Organizer.findOne({
+      user: req.user.id,
+    });
 
+    if (!organizer) {
+      return next(
+        errorHandler(
+          404,
+          "Organizer profile not found."
+        )
+      );
+    }
 
-try{
+    res.status(200).json(organizer);
 
-
-if(req.user.accountType === "organizer"){
-
-const organizer =
-await Organizer.findOne({
-user:req.user.id
-});
-
-
-if(
-!organizer ||
-event.organizerProfile.toString()
-!== organizer._id.toString()
-){
-
-return next(
-errorHandler(
-403,
-"You can only delete your own events"
-)
-);
-
-}
-
-}
-
-
-
-res.status(200).json(
-organizer
-);
-
-
-
-}catch(error){
-
-next(error);
-
-}
-
-
+  } catch (error) {
+    next(error);
+  }
 };
 
 
